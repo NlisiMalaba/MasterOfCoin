@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appTitle": "MasterOfCoin",
+  "dashboard": "Dashboard",
+  "transactions": "Transactions",
+  "savingsGoals": "Savings Goals",
+  "budgets": "Budgets",
+  "analytics": "Analytics",
+  "recurring": "Recurring",
+  "settings": "Settings"
+}
