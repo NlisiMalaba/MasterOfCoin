@@ -19,6 +19,10 @@ class DashboardLoaded extends DashboardState {
     required this.usdExpenses,
     required this.zwgIncome,
     required this.zwgExpenses,
+    this.expensesByCategory = const [],
+    this.monthlyIncome = const [],
+    this.monthlyExpenses = const [],
+    this.monthLabels = const [],
   });
 
   final double usdBalance;
@@ -27,10 +31,24 @@ class DashboardLoaded extends DashboardState {
   final double usdExpenses;
   final double zwgIncome;
   final double zwgExpenses;
+  final List<MapEntry<String, double>> expensesByCategory;
+  final List<double> monthlyIncome;
+  final List<double> monthlyExpenses;
+  final List<String> monthLabels;
 
   @override
-  List<Object?> get props =>
-      [usdBalance, zwgBalance, usdIncome, usdExpenses, zwgIncome, zwgExpenses];
+  List<Object?> get props => [
+        usdBalance,
+        zwgBalance,
+        usdIncome,
+        usdExpenses,
+        zwgIncome,
+        zwgExpenses,
+        expensesByCategory,
+        monthlyIncome,
+        monthlyExpenses,
+        monthLabels,
+      ];
 }
 
 class DashboardError extends DashboardState {

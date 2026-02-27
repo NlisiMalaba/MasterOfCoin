@@ -141,7 +141,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),

@@ -59,7 +59,6 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Savings Goals'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'main_shell.dart';
+import '../../features/analytics/presentation/pages/analytics_page.dart';
+import '../../features/budgets/presentation/pages/budgets_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/recurring/presentation/pages/recurring_templates_page.dart';
+import '../../features/savings_goals/presentation/pages/savings_goals_list_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/transactions/presentation/pages/transaction_form_page.dart';
 import '../../features/transactions/presentation/pages/transactions_list_page.dart';
-import '../../features/savings_goals/presentation/pages/savings_goals_list_page.dart';
-import '../../features/budgets/presentation/pages/budgets_page.dart';
-import '../../features/analytics/presentation/pages/analytics_page.dart';
-import '../../features/recurring/presentation/pages/recurring_templates_page.dart';
 
 class AppRouter {
   AppRouter._();
@@ -44,20 +44,64 @@ class AppRouter {
       },
       routes: [
         GoRoute(
-          path: dashboard,
-          builder: (context, state) => const DashboardPage(),
-        ),
-        GoRoute(
           path: onboarding,
           builder: (context, state) => const OnboardingPage(),
         ),
-        GoRoute(
-          path: settings,
-          builder: (context, state) => const SettingsPage(),
-        ),
-        GoRoute(
-          path: transactions,
-          builder: (context, state) => const TransactionsListPage(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) =>
+              MainShell(navigationShell: navigationShell),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: dashboard,
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: DashboardPage(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: transactions,
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: TransactionsListPage(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: savingsGoals,
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: SavingsGoalsListPage(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: analytics,
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: AnalyticsPage(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: settings,
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: SettingsPage(),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: addTransaction,
@@ -71,16 +115,8 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: savingsGoals,
-          builder: (context, state) => const SavingsGoalsListPage(),
-        ),
-        GoRoute(
           path: budgets,
           builder: (context, state) => const BudgetsPage(),
-        ),
-        GoRoute(
-          path: analytics,
-          builder: (context, state) => const AnalyticsPage(),
         ),
         GoRoute(
           path: recurring,

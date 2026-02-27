@@ -53,10 +53,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
       ),
       body: _defaultCurrency == null
           ? const Center(child: CircularProgressIndicator())
@@ -97,6 +93,22 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: Text('${_expenseCategories.length} categories'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showExpenseCategoriesList(context),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('More', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                ListTile(
+                  title: const Text('Budgets'),
+                  subtitle: const Text('Monthly budget allocations'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/budgets'),
+                ),
+                ListTile(
+                  title: const Text('Recurring Templates'),
+                  subtitle: const Text('Weekly and monthly templates'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/recurring'),
                 ),
               ],
             ),

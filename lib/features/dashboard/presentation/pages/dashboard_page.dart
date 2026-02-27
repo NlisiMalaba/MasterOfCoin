@@ -1,11 +1,12 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/currency_display.dart';
 import '../../../../shared/domain/currency.dart';
-import '../../../../core/widgets/nav_card.dart';
 import '../../../../core/widgets/stat_card.dart';
 import '../cubit/dashboard_cubit.dart';
 
@@ -39,12 +40,6 @@ class DashboardPage extends StatelessWidget {
                     floating: true,
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     title: const Text('MasterOfCoin'),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined),
-                        onPressed: () => context.push('/settings'),
-                      ),
-                    ],
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -62,7 +57,10 @@ class DashboardPage extends StatelessWidget {
                           ),
                           Text(
                             'Welcome back',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -79,18 +77,9 @@ class DashboardPage extends StatelessWidget {
                             zwgExpenses: data.zwgExpenses,
                           ),
                           const SizedBox(height: 24),
-                          _SectionHeader(
-                            title: 'Quick actions',
-                            onSeeAll: null,
-                          ),
-                          const SizedBox(height: 12),
-                          _NavGrid(
-                            onTransactions: () => context.push('/transactions'),
-                            onSavings: () => context.push('/savings-goals'),
-                            onBudgets: () => context.push('/budgets'),
-                            onAnalytics: () => context.push('/analytics'),
-                            onRecurring: () => context.push('/recurring'),
-                          ),
+                          _SpendingByCategory(data: data),
+                          const SizedBox(height: 24),
+                          _IncomeVsExpensesChart(data: data),
                           const SizedBox(height: 32),
                         ],
                       ),
@@ -102,42 +91,6 @@ class DashboardPage extends StatelessWidget {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/transactions/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Add transaction'),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.onSeeAll});
-
-  final String title;
-  final VoidCallback? onSeeAll;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        if (onSeeAll != null)
-          TextButton(
-            onPressed: onSeeAll,
-            child: Text(
-              'See all',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -166,14 +119,23 @@ class _BalanceSection extends StatelessWidget {
                   Color(0xFF2D6F73),
                 ]
               : [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.2),
+                  Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                 ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            color: Theme.of(context)
+                .colorScheme
+                .primary
+                .withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -281,55 +243,270 @@ class _MonthlySummary extends StatelessWidget {
   }
 }
 
-class _NavGrid extends StatelessWidget {
-  const _NavGrid({
-    required this.onTransactions,
-    required this.onSavings,
-    required this.onBudgets,
-    required this.onAnalytics,
-    required this.onRecurring,
-  });
+class _SpendingByCategory extends StatelessWidget {
+  const _SpendingByCategory({required this.data});
 
-  final VoidCallback onTransactions;
-  final VoidCallback onSavings;
-  final VoidCallback onBudgets;
-  final VoidCallback onAnalytics;
-  final VoidCallback onRecurring;
+  final DashboardLoaded data;
+
+  static const _chartColors = [
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0),
+    Color(0xFFFF9800),
+    Color(0xFF00BCD4),
+    Color(0xFFE91E63),
+    Color(0xFFF44336),
+    Color(0xFF673AB7),
+    Color(0xFF795548),
+    Color(0xFF607D8B),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        NavCard(
-          icon: Icons.receipt_long,
-          label: 'All Transactions',
-          onTap: onTransactions,
+    if (data.expensesByCategory.isEmpty) {
+      return _AnalyticsCard(
+        title: 'Spending by category',
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No expenses this month',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
         ),
-        const SizedBox(height: 10),
-        NavCard(
-          icon: Icons.savings,
-          label: 'Savings Goals',
-          onTap: onSavings,
+      );
+    }
+
+    return _AnalyticsCard(
+      title: 'Spending by category',
+      onSeeAll: () => context.go('/analytics'),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 180,
+            child: PieChart(
+              PieChartData(
+                sections: data.expensesByCategory.asMap().entries.map((e) {
+                  final i = e.key % _chartColors.length;
+                  return PieChartSectionData(
+                    value: e.value.value,
+                    title: '',
+                    color: _chartColors[i],
+                    radius: 56,
+                  );
+                }).toList(),
+                sectionsSpace: 2,
+                centerSpaceRadius: 36,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...data.expensesByCategory.asMap().entries.take(5).map((e) {
+            final i = e.key % _chartColors.length;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: _chartColors[i],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      e.value.key,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  Text(
+                    CurrencyFormatter.format(e.value.value, Currency.usd),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _IncomeVsExpensesChart extends StatelessWidget {
+  const _IncomeVsExpensesChart({required this.data});
+
+  final DashboardLoaded data;
+
+  @override
+  Widget build(BuildContext context) {
+    final positiveColor = AppTheme.positiveColor(context);
+    final negativeColor = AppTheme.negativeColor(context);
+
+    if (data.monthLabels.isEmpty) {
+      return _AnalyticsCard(
+        title: 'Income vs expenses (6 months)',
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No data yet',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
         ),
-        const SizedBox(height: 10),
-        NavCard(
-          icon: Icons.account_balance_wallet,
-          label: 'Budgets',
-          onTap: onBudgets,
+      );
+    }
+
+    final maxY = ([
+      ...data.monthlyIncome,
+      ...data.monthlyExpenses,
+    ].fold<double>(0, (a, b) => a > b ? a : b) * 1.2).clamp(10.0, double.infinity);
+
+    return _AnalyticsCard(
+      title: 'Income vs expenses (6 months)',
+      onSeeAll: () => context.go('/analytics'),
+      child: SizedBox(
+        height: 200,
+        child: BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: maxY,
+            barGroups: [
+              for (var i = 0; i < data.monthLabels.length; i++)
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: data.monthlyIncome[i],
+                      color: positiveColor,
+                      width: 10,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                    BarChartRodData(
+                      toY: data.monthlyExpenses[i],
+                      color: negativeColor,
+                      width: 10,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ],
+                  showingTooltipIndicators: [0, 1],
+                ),
+            ],
+            titlesData: FlTitlesData(
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (v, meta) {
+                    final i = v.toInt();
+                    if (i >= 0 && i < data.monthLabels.length) {
+                      final m = data.monthLabels[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          m.length >= 7 ? m.substring(2) : m,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 10,
+                              ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  reservedSize: 28,
+                  interval: 1,
+                ),
+              ),
+              leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+            ),
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+          ),
+          duration: const Duration(milliseconds: 300),
         ),
-        const SizedBox(height: 10),
-        NavCard(
-          icon: Icons.analytics,
-          label: 'Analytics',
-          onTap: onAnalytics,
-        ),
-        const SizedBox(height: 10),
-        NavCard(
-          icon: Icons.repeat,
-          label: 'Recurring',
-          onTap: onRecurring,
-        ),
-      ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsCard extends StatelessWidget {
+  const _AnalyticsCard({
+    required this.title,
+    required this.child,
+    this.onSeeAll,
+  });
+
+  final String title;
+  final Widget child;
+  final VoidCallback? onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.06,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (onSeeAll != null)
+                TextButton(
+                  onPressed: onSeeAll,
+                  child: Text(
+                    'See details',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
   }
 }
