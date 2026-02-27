@@ -42,7 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _defaultCurrency =
           currencyCode != null ? Currency.fromCode(currencyCode) : Currency.usd;
-      _exchangeRate = rate ?? 13.66;
+      _exchangeRate = rate ?? 1.00;
       _incomeSources = sources;
       _expenseCategories = categories;
     });
@@ -69,7 +69,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => _showCurrencyPicker(context),
                 ),
                 ListTile(
-                  title: const Text('Exchange Rate (ZWG per USD)'),
+                  title: const Text('Exchange Rate (1 USD per ZWG)'),
                   subtitle: Text(_exchangeRate?.toStringAsFixed(2) ?? '—'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showExchangeRateDialog(context),
@@ -252,8 +252,8 @@ class _SettingsPageState extends State<SettingsPage> {
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(
-            labelText: 'ZWG per 1 USD',
-            hintText: 'e.g. 13.66',
+            labelText: '1 USD per ZWG',
+            hintText: 'e.g. 1.00',
           ),
         ),
         actions: [
