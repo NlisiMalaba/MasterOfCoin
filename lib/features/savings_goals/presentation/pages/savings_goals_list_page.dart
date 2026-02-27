@@ -185,7 +185,7 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
                 const SizedBox(height: 16),
                 ListTile(
                   title: Text(deadline != null
-                      ? 'Due: ${deadline.day}/${deadline.month}/${deadline.year}'
+                      ? 'Due: ${deadline!.day}/${deadline!.month}/${deadline!.year}'
                       : 'Set deadline'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
@@ -236,7 +236,7 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
         targetAmount: amount,
         currency: currency,
         currentAmount: goal?.currentAmount ?? 0,
-        deadlineDate: deadline != null ? (deadline.millisecondsSinceEpoch / 1000).round() : null,
+        deadlineDate: deadline != null ? (deadline!.millisecondsSinceEpoch / 1000).round() : null,
         createdAt: goal?.createdAt ?? now,
         updatedAt: now,
       );

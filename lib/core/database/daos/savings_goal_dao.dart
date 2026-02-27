@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../../shared/domain/currency.dart';
+import '../../../shared/domain/currency.dart';
 import '../app_database.dart';
 import '../daos/transaction_dao.dart';
 import '../../../features/savings_goals/domain/entity/savings_goal.dart';

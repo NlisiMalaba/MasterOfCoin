@@ -252,8 +252,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                     DropdownButtonFormField<String>(
                       value: _categoryId,
                       decoration: const InputDecoration(labelText: 'Income Source'),
-                      items: _incomeSources.map((s) {
-                        return DropdownMenuItem(
+                      items: _incomeSources.map<DropdownMenuItem<String>>((s) {
+                        return DropdownMenuItem<String>(
                           value: s.id,
                           child: Text(s.name),
                         );
@@ -262,18 +262,18 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                     ),
                     if (_savingsGoals.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<String?>(
                         value: _savingsGoalId,
                         decoration: const InputDecoration(
                           labelText: 'Allocate to Savings Goal (optional)',
                         ),
                         items: [
-                          const DropdownMenuItem(
+                          const DropdownMenuItem<String?>(
                             value: null,
                             child: Text('None'),
                           ),
-                          ..._savingsGoals.map((g) {
-                            return DropdownMenuItem(
+                          ..._savingsGoals.map<DropdownMenuItem<String?>>((g) {
+                            return DropdownMenuItem<String?>(
                               value: g.id,
                               child: Text(g.name),
                             );
@@ -287,8 +287,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                     DropdownButtonFormField<String>(
                       value: _categoryId,
                       decoration: const InputDecoration(labelText: 'Category'),
-                      items: _expenseCategories.map((c) {
-                        return DropdownMenuItem(
+                      items: _expenseCategories.map<DropdownMenuItem<String>>((c) {
+                        return DropdownMenuItem<String>(
                           value: c.id,
                           child: Text(c.name),
                         );

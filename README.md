@@ -91,6 +91,40 @@ lib/
 └── shared/                   # Shared domain (Currency, TransactionType)
 ```
 
+## Troubleshooting
+
+### Gradle "Connection timed out" when building Android
+
+If you get `java.net.ConnectException: Connection timed out` when running `flutter run`, Gradle cannot download its distribution. Try:
+
+**Option A: Retry on a different network**
+- Use mobile hotspot or home Wi‑Fi if on a corporate network
+- Retry `flutter run` after a few minutes
+
+**Option B: Use a local Gradle distribution**
+
+1. Download `gradle-8.0-all.zip` from:  
+   https://services.gradle.org/distributions/gradle-8.0-all.zip  
+2. Save it somewhere permanent, e.g. `C:\gradle\gradle-8.0-all.zip`
+3. Edit `android/gradle/wrapper/gradle-wrapper.properties` and replace the `distributionUrl` line with:
+   ```properties
+   distributionUrl=file\:///C:/gradle/gradle-8.0-all.zip
+   ```
+   Use the real path to your downloaded file.
+4. Run `flutter run` again.
+
+**Option C: Configure proxy (if required)**
+
+If you use a proxy, add to `android/gradle.properties`:
+```properties
+systemProp.http.proxyHost=your.proxy.host
+systemProp.http.proxyPort=8080
+systemProp.https.proxyHost=your.proxy.host
+systemProp.https.proxyPort=8080
+```
+
+---
+
 ## Architecture
 
 - **Clean Architecture** with feature-first organization

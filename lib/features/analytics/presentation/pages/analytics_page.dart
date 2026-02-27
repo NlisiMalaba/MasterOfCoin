@@ -256,8 +256,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                               Text(CurrencyFormatter.format(e.value.value, _currency)),
                             ],
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                       const SizedBox(height: 24),
                     ],
                     if (_monthLabels.isNotEmpty) ...[

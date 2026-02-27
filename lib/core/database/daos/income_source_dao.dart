@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../../shared/domain/currency.dart';
+import '../../../shared/domain/currency.dart';
 import '../app_database.dart';
 import '../../../features/income/domain/entity/income_source.dart';
 

@@ -7,7 +7,7 @@ class CurrencyDisplay extends StatelessWidget {
   const CurrencyDisplay({
     super.key,
     required this.amount,
-    required this.currency, {
+    required this.currency,
     this.compact = false,
   });
 

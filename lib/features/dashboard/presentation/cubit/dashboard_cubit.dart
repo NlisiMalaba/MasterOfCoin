@@ -2,8 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/di/injection.dart';
-
-part 'dashboard_state.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/extensions/date_time_extensions.dart';
 import '../../../../shared/domain/currency.dart';

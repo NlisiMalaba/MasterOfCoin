@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../../shared/domain/currency.dart';
-import '../../shared/domain/transaction_type.dart';
+import '../../../shared/domain/currency.dart';
+import '../../../shared/domain/transaction_type.dart';
 import '../app_database.dart';
 import '../../utils/transaction_mappers.dart';
 

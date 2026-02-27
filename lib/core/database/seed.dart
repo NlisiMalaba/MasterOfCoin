@@ -1,7 +1,7 @@
 import '../constants/category_defaults.dart';
-import '../daos/expense_category_dao.dart';
-import '../daos/income_source_dao.dart';
-import '../daos/app_settings_dao.dart';
+import 'daos/expense_category_dao.dart';
+import 'daos/income_source_dao.dart';
+import 'daos/app_settings_dao.dart';
 import 'app_database.dart';
 import '../../features/expenses/domain/entity/expense_category.dart';
 import '../../features/income/domain/entity/income_source.dart';

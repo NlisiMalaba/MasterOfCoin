@@ -127,9 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   return ListTile(
                     title: Text(s.name),
                     subtitle: Text('${s.currency.code}'),
-                    trailing: s.isSystem
-                        ? null
-                        : IconButton(
+                    trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () async {
                               await _incomeDao.delete(s.id);
