@@ -67,12 +67,6 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transactions'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => context.push('/transactions/add'),
-          ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
