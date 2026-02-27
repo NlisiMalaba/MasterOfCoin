@@ -39,7 +39,7 @@ class DashboardPage extends StatelessWidget {
                     expandedHeight: 0,
                     floating: true,
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    title: const Text('MasterOfCoin'),
+                    title: const Text('Master of Coin'),
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -266,6 +266,7 @@ class _SpendingByCategory extends StatelessWidget {
     if (data.expensesByCategory.isEmpty) {
       return _AnalyticsCard(
         title: 'Spending by category',
+        subtitle: 'This month',
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -282,6 +283,7 @@ class _SpendingByCategory extends StatelessWidget {
 
     return _AnalyticsCard(
       title: 'Spending by category',
+      subtitle: 'This month',
       onSeeAll: () => context.go('/analytics'),
       child: Column(
         children: [
@@ -346,105 +348,275 @@ class _IncomeVsExpensesChart extends StatelessWidget {
 
   final DashboardLoaded data;
 
+  static const _shortMonths = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String _formatMonthLabel(String yyyyMm) {
+    if (yyyyMm.length >= 7) {
+      final parts = yyyyMm.split('-');
+      if (parts.length >= 2) {
+        final month = int.tryParse(parts[1]);
+        final year = parts[0].length >= 4 ? parts[0].substring(2) : '';
+        if (month != null && month >= 1 && month <= 12) {
+          return year.isNotEmpty ? '${_shortMonths[month - 1]} \'$year' : _shortMonths[month - 1];
+        }
+      }
+    }
+    return yyyyMm;
+  }
+
   @override
   Widget build(BuildContext context) {
     final positiveColor = AppTheme.positiveColor(context);
     final negativeColor = AppTheme.negativeColor(context);
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     if (data.monthLabels.isEmpty) {
       return _AnalyticsCard(
-        title: 'Income vs expenses (6 months)',
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'No data yet',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
+        title: 'Income vs expenses',
+        subtitle: 'Last 6 months',
+        onSeeAll: () => context.go('/analytics'),
+        child: _EmptyChartPlaceholder(
+          message: 'No data yet. Add income and expenses to see trends.',
+          mutedColor: mutedColor,
         ),
       );
     }
 
-    final maxY = ([
+    final maxVal = [
       ...data.monthlyIncome,
       ...data.monthlyExpenses,
-    ].fold<double>(0, (a, b) => a > b ? a : b) * 1.2).clamp(10.0, double.infinity);
+    ].fold<double>(0, (a, b) => a > b ? a : b);
+    final maxY = (maxVal * 1.15).clamp(10.0, double.infinity);
+    final stepY = maxY / 4;
+
+    final incomeSpots = data.monthlyIncome
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final expenseSpots = data.monthlyExpenses
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
 
     return _AnalyticsCard(
-      title: 'Income vs expenses (6 months)',
+      title: 'Income vs expenses',
+      subtitle: 'Last 6 months',
       onSeeAll: () => context.go('/analytics'),
-      child: SizedBox(
-        height: 200,
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
-            maxY: maxY,
-            barGroups: [
-              for (var i = 0; i < data.monthLabels.length; i++)
-                BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: data.monthlyIncome[i],
-                      color: positiveColor,
-                      width: 10,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(4),
-                      ),
-                    ),
-                    BarChartRodData(
-                      toY: data.monthlyExpenses[i],
-                      color: negativeColor,
-                      width: 10,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(4),
-                      ),
-                    ),
-                  ],
-                  showingTooltipIndicators: [0, 1],
-                ),
-            ],
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (v, meta) {
-                    final i = v.toInt();
-                    if (i >= 0 && i < data.monthLabels.length) {
-                      final m = data.monthLabels[i];
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          m.length >= 7 ? m.substring(2) : m,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 10,
-                              ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                  reservedSize: 28,
-                  interval: 1,
-                ),
-              ),
-              leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-            ),
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ChartLegend(
+            incomeColor: positiveColor,
+            expenseColor: negativeColor,
+            textColor: textColor,
           ),
-          duration: const Duration(milliseconds: 300),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: stepY,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: mutedColor.withValues(alpha: 0.15),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: stepY,
+                      getTitlesWidget: (value, meta) {
+                        if (value <= 0) return const SizedBox.shrink();
+                        final formatted = value >= 1000
+                            ? '\$${(value / 1000).toStringAsFixed(1)}k'
+                            : '\$${value.toStringAsFixed(0)}';
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            formatted,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: mutedColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        final i = value.toInt();
+                        if (i >= 0 && i < data.monthLabels.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _formatMonthLabel(data.monthLabels[i]),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: mutedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: (data.monthLabels.length - 1).toDouble(),
+                minY: 0,
+                maxY: maxY,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: incomeSpots,
+                    isCurved: true,
+                    color: positiveColor,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 4,
+                        color: positiveColor,
+                        strokeWidth: 2,
+                        strokeColor: Theme.of(context).colorScheme.surface,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(show: false),
+                  ),
+                  LineChartBarData(
+                    spots: expenseSpots,
+                    isCurved: true,
+                    color: negativeColor,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 4,
+                        color: negativeColor,
+                        strokeWidth: 2,
+                        strokeColor: Theme.of(context).colorScheme.surface,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(show: false),
+                  ),
+                ],
+              ),
+              duration: const Duration(milliseconds: 350),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartLegend extends StatelessWidget {
+  const _ChartLegend({
+    required this.incomeColor,
+    required this.expenseColor,
+    required this.textColor,
+  });
+
+  final Color incomeColor;
+  final Color expenseColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _LegendItem(color: incomeColor, label: 'Income', textColor: textColor),
+        const SizedBox(width: 16),
+        _LegendItem(color: expenseColor, label: 'Expenses', textColor: textColor),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.textColor,
+  });
+
+  final Color color;
+  final String label;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: textColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyChartPlaceholder extends StatelessWidget {
+  const _EmptyChartPlaceholder({
+    required this.message,
+    required this.mutedColor,
+  });
+
+  final String message;
+  final Color mutedColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: mutedColor,
+          ),
         ),
       ),
     );
@@ -455,10 +627,12 @@ class _AnalyticsCard extends StatelessWidget {
   const _AnalyticsCard({
     required this.title,
     required this.child,
+    this.subtitle,
     this.onSeeAll,
   });
 
   final String title;
+  final String? subtitle;
   final Widget child;
   final VoidCallback? onSeeAll;
 
@@ -485,25 +659,49 @@ class _AnalyticsCard extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               if (onSeeAll != null)
                 TextButton(
                   onPressed: onSeeAll,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: Text(
                     'See details',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           child,
         ],
       ),
