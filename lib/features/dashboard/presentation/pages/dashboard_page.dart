@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/currency_display.dart';
+import '../../../../shared/domain/currency.dart';
+import '../../../../core/widgets/nav_card.dart';
+import '../../../../core/widgets/stat_card.dart';
 import '../cubit/dashboard_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -11,15 +15,6 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MasterOfCoin'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
       body: BlocProvider(
         create: (context) => DashboardCubit()..load(),
         child: BlocBuilder<DashboardCubit, DashboardState>(
@@ -37,50 +32,69 @@ class DashboardPage extends StatelessWidget {
               onRefresh: () async {
                 context.read<DashboardCubit>().load();
               },
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _BalanceCard(
-                    usdBalance: data.usdBalance,
-                    zwgBalance: data.zwgBalance,
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 0,
+                    floating: true,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    title: const Text('MasterOfCoin'),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => context.push('/settings'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _SummaryCard(
-                    usdIncome: data.usdIncome,
-                    usdExpenses: data.usdExpenses,
-                    zwgIncome: data.zwgIncome,
-                    zwgExpenses: data.zwgExpenses,
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    leading: const Icon(Icons.list),
-                    title: const Text('All Transactions'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/transactions'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.savings),
-                    title: const Text('Savings Goals'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/savings-goals'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.account_balance_wallet),
-                    title: const Text('Budgets'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/budgets'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.analytics),
-                    title: const Text('Analytics'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/analytics'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.repeat),
-                    title: const Text('Recurring'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/recurring'),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hello',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                          Text(
+                            'Welcome back',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 24),
+                          _BalanceSection(
+                            usdBalance: data.usdBalance,
+                            zwgBalance: data.zwgBalance,
+                          ),
+                          const SizedBox(height: 20),
+                          _MonthlySummary(
+                            usdIncome: data.usdIncome,
+                            usdExpenses: data.usdExpenses,
+                            zwgIncome: data.zwgIncome,
+                            zwgExpenses: data.zwgExpenses,
+                          ),
+                          const SizedBox(height: 24),
+                          _SectionHeader(
+                            title: 'Quick actions',
+                            onSeeAll: null,
+                          ),
+                          const SizedBox(height: 12),
+                          _NavGrid(
+                            onTransactions: () => context.push('/transactions'),
+                            onSavings: () => context.push('/savings-goals'),
+                            onBudgets: () => context.push('/budgets'),
+                            onAnalytics: () => context.push('/analytics'),
+                            onRecurring: () => context.push('/recurring'),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -91,14 +105,45 @@ class DashboardPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/transactions/add'),
         icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        label: const Text('Add transaction'),
       ),
     );
   }
 }
 
-class _BalanceCard extends StatelessWidget {
-  const _BalanceCard({
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, this.onSeeAll});
+
+  final String title;
+  final VoidCallback? onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        if (onSeeAll != null)
+          TextButton(
+            onPressed: onSeeAll,
+            child: Text(
+              'See all',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _BalanceSection extends StatelessWidget {
+  const _BalanceSection({
     required this.usdBalance,
     required this.zwgBalance,
   });
@@ -108,29 +153,65 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Total Balance',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            CurrencyDisplay(amount: usdBalance, currency: 'USD'),
-            const SizedBox(height: 4),
-            CurrencyDisplay(amount: zwgBalance, currency: 'ZWG'),
-          ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? const [
+                  Color(0xFF1E4A4C),
+                  Color(0xFF2D6F73),
+                ]
+              : [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                ],
         ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Total Balance',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 8),
+          CurrencyDisplay(
+            amount: usdBalance,
+            currency: 'USD',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${CurrencyFormatter.format(zwgBalance, Currency.zwg)} (ZWG)',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
+class _MonthlySummary extends StatelessWidget {
+  const _MonthlySummary({
     required this.usdIncome,
     required this.usdExpenses,
     required this.zwgIncome,
@@ -144,65 +225,110 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'This month',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Row(
           children: [
-            Text(
-              'This Month',
-              style: Theme.of(context).textTheme.titleMedium,
+            Expanded(
+              child: StatCard(
+                label: 'Income',
+                amount: '\$${usdIncome.toStringAsFixed(2)}',
+                isPositive: true,
+              ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryItem(
-                    label: 'Income',
-                    usd: usdIncome,
-                    zwg: zwgIncome,
-                    color: Colors.green,
-                  ),
-                ),
-                Expanded(
-                  child: _SummaryItem(
-                    label: 'Expenses',
-                    usd: usdExpenses,
-                    zwg: zwgExpenses,
-                    color: Colors.red,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                label: 'Expenses',
+                amount: '\$${usdExpenses.toStringAsFixed(2)}',
+                isPositive: false,
+              ),
             ),
           ],
         ),
-      ),
+        if (zwgIncome > 0 || zwgExpenses > 0) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: StatCard(
+                  label: 'Income (ZWG)',
+                  amount: 'Z\$${zwgIncome.toStringAsFixed(2)}',
+                  isPositive: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatCard(
+                  label: 'Expenses (ZWG)',
+                  amount: 'Z\$${zwgExpenses.toStringAsFixed(2)}',
+                  isPositive: false,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
 
-class _SummaryItem extends StatelessWidget {
-  const _SummaryItem({
-    required this.label,
-    required this.usd,
-    required this.zwg,
-    required this.color,
+class _NavGrid extends StatelessWidget {
+  const _NavGrid({
+    required this.onTransactions,
+    required this.onSavings,
+    required this.onBudgets,
+    required this.onAnalytics,
+    required this.onRecurring,
   });
 
-  final String label;
-  final double usd;
-  final double zwg;
-  final Color color;
+  final VoidCallback onTransactions;
+  final VoidCallback onSavings;
+  final VoidCallback onBudgets;
+  final VoidCallback onAnalytics;
+  final VoidCallback onRecurring;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-        CurrencyDisplay(amount: usd, currency: 'USD', compact: true),
-        CurrencyDisplay(amount: zwg, currency: 'ZWG', compact: true),
+        NavCard(
+          icon: Icons.receipt_long,
+          label: 'All Transactions',
+          onTap: onTransactions,
+        ),
+        const SizedBox(height: 10),
+        NavCard(
+          icon: Icons.savings,
+          label: 'Savings Goals',
+          onTap: onSavings,
+        ),
+        const SizedBox(height: 10),
+        NavCard(
+          icon: Icons.account_balance_wallet,
+          label: 'Budgets',
+          onTap: onBudgets,
+        ),
+        const SizedBox(height: 10),
+        NavCard(
+          icon: Icons.analytics,
+          label: 'Analytics',
+          onTap: onAnalytics,
+        ),
+        const SizedBox(height: 10),
+        NavCard(
+          icon: Icons.repeat,
+          label: 'Recurring',
+          onTap: onRecurring,
+        ),
       ],
     );
   }
