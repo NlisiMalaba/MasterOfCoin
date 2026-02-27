@@ -7,6 +7,7 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/recurring/presentation/pages/recurring_templates_page.dart';
 import '../../features/savings_goals/presentation/pages/savings_goals_list_page.dart';
+import '../../features/savings_goals/presentation/pages/savings_usage_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/transactions/presentation/pages/transaction_form_page.dart';
 import '../../features/transactions/presentation/pages/transactions_list_page.dart';
@@ -20,6 +21,7 @@ class AppRouter {
   static const String transactions = '/transactions';
   static const String addTransaction = '/transactions/add';
   static const String savingsGoals = '/savings-goals';
+  static const String savingsUsage = '/savings-usage';
   static const String budgets = '/budgets';
   static const String analytics = '/analytics';
   static const String recurring = '/recurring';
@@ -105,7 +107,11 @@ class AppRouter {
         ),
         GoRoute(
           path: addTransaction,
-          builder: (context, state) => const TransactionFormPage(),
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final savingsGoalId = extra?['savingsGoalId'] as String?;
+            return TransactionFormPage(savingsGoalIdForTopUp: savingsGoalId);
+          },
         ),
         GoRoute(
           path: '/transactions/edit/:id',
@@ -121,6 +127,10 @@ class AppRouter {
         GoRoute(
           path: recurring,
           builder: (context, state) => const RecurringTemplatesPage(),
+        ),
+        GoRoute(
+          path: savingsUsage,
+          builder: (context, state) => const SavingsUsagePage(),
         ),
       ],
     );

@@ -23,6 +23,7 @@ class DashboardLoaded extends DashboardState {
     this.monthlyIncome = const [],
     this.monthlyExpenses = const [],
     this.monthLabels = const [],
+    this.savingsGoals = const [],
   });
 
   final double usdBalance;
@@ -35,6 +36,7 @@ class DashboardLoaded extends DashboardState {
   final List<double> monthlyIncome;
   final List<double> monthlyExpenses;
   final List<String> monthLabels;
+  final List<SavingsGoalSummary> savingsGoals;
 
   @override
   List<Object?> get props => [
@@ -48,6 +50,7 @@ class DashboardLoaded extends DashboardState {
         monthlyIncome,
         monthlyExpenses,
         monthLabels,
+        savingsGoals,
       ];
 }
 

@@ -14,9 +14,15 @@ import '../../../../shared/domain/transaction_type.dart';
 import '../../domain/entity/transaction.dart';
 
 class TransactionFormPage extends StatefulWidget {
-  const TransactionFormPage({super.key, this.transactionId});
+  const TransactionFormPage({
+    super.key,
+    this.transactionId,
+    this.savingsGoalIdForTopUp,
+  });
 
   final String? transactionId;
+  /// When set, opens as income form pre-selected for this savings goal (Top up).
+  final String? savingsGoalIdForTopUp;
 
   @override
   State<TransactionFormPage> createState() => _TransactionFormPageState();
@@ -56,9 +62,6 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
 
   Future<void> _loadData() async {
     setState(() => _loading = true);
-    final sources = await _incomeDao.getByCurrency(_currency);
-    final categories = await _expenseDao.getAll();
-    final goals = await _savingsDao.getAll();
 
     if (widget.transactionId != null) {
       final row = await _txDao.getById(widget.transactionId!);
@@ -73,13 +76,28 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
         _categoryId = tx.categoryId;
         _savingsGoalId = tx.savingsGoalId;
       }
-    } else {
+    } else if (widget.savingsGoalIdForTopUp != null) {
+      final goal = await _savingsDao.getById(widget.savingsGoalIdForTopUp!);
+      if (goal != null) {
+        _type = TransactionType.income;
+        _currency = goal.currency;
+        _savingsGoalId = goal.id;
+      }
+    }
+
+    final sources = await _incomeDao.getByCurrency(_currency);
+    final categories = await _expenseDao.getAll();
+    final goals = await _savingsDao.getAll();
+
+    if (widget.transactionId == null && widget.savingsGoalIdForTopUp == null) {
       if (_type == TransactionType.income && sources.isNotEmpty) {
         _categoryId = sources.first.id;
       }
       if (_type == TransactionType.expense && categories.isNotEmpty) {
         _categoryId = categories.first.id;
       }
+    } else if (widget.savingsGoalIdForTopUp != null && sources.isNotEmpty) {
+      _categoryId = sources.first.id;
     }
 
     setState(() {

@@ -3,7 +3,9 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
+import '../../../../core/database/daos/savings_goal_dao.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
+import '../../domain/entity/savings_goal_summary.dart';
 import '../../../../core/extensions/date_time_extensions.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../../../shared/domain/transaction_type.dart';
@@ -14,10 +16,12 @@ class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit() : super(DashboardInitial()) {
     _transactionDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
+    _savingsGoalDao = getIt<SavingsGoalDao>();
   }
 
   late final TransactionDao _transactionDao;
   late final ExpenseCategoryDao _categoryDao;
+  late final SavingsGoalDao _savingsGoalDao;
 
   Future<void> load() async {
     emit(DashboardLoading());
@@ -117,6 +121,20 @@ class DashboardCubit extends Cubit<DashboardState> {
       final expensesList =
           allMonths.map((m) => expensesByMonth[m] ?? 0.0).toList();
 
+      // Savings goals summary (USD only for dashboard)
+      final allGoals = await _savingsGoalDao.getAll();
+      final savingsGoals = allGoals
+          .where((g) => g.currency == Currency.usd)
+          .map((g) => SavingsGoalSummary(
+                id: g.id,
+                name: g.name,
+                currentAmount: g.currentAmount,
+                targetAmount: g.targetAmount,
+                currency: g.currency,
+              ))
+          .take(5)
+          .toList();
+
       emit(DashboardLoaded(
         usdBalance: usdBalance,
         zwgBalance: zwgBalance,
@@ -128,6 +146,7 @@ class DashboardCubit extends Cubit<DashboardState> {
         monthlyIncome: incomeList,
         monthlyExpenses: expensesList,
         monthLabels: allMonths,
+        savingsGoals: savingsGoals,
       ));
     } catch (e) {
       emit(DashboardError(e.toString()));

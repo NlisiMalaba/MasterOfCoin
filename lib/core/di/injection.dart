@@ -6,6 +6,7 @@ import '../database/daos/transaction_dao.dart';
 import '../database/daos/income_source_dao.dart';
 import '../database/daos/expense_category_dao.dart';
 import '../database/daos/savings_goal_dao.dart';
+import '../database/daos/savings_usage_dao.dart';
 import '../database/daos/budget_allocation_dao.dart';
 import '../database/daos/app_settings_dao.dart';
 import '../database/daos/recurring_template_dao.dart';
@@ -26,8 +27,13 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<BudgetAllocationDao>(BudgetAllocationDao(AppDatabase.instance));
   getIt.registerSingleton<AppSettingsDao>(AppSettingsDao(AppDatabase.instance));
   getIt.registerSingleton<RecurringTemplateDao>(RecurringTemplateDao(AppDatabase.instance));
+  getIt.registerSingleton<SavingsUsageDao>(SavingsUsageDao(AppDatabase.instance));
   getIt.registerSingleton<SavingsGoalDao>(
-    SavingsGoalDao(AppDatabase.instance, getIt<TransactionDao>()),
+    SavingsGoalDao(
+      AppDatabase.instance,
+      getIt<TransactionDao>(),
+      getIt<SavingsUsageDao>(),
+    ),
   );
 
   getIt.registerSingleton<TransactionRepository>(

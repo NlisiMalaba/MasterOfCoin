@@ -79,6 +79,8 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(height: 24),
                           _SpendingByCategory(data: data),
                           const SizedBox(height: 24),
+                          _SavingsOverview(data: data),
+                          const SizedBox(height: 24),
                           _IncomeVsExpensesChart(data: data),
                           const SizedBox(height: 32),
                         ],
@@ -239,6 +241,91 @@ class _MonthlySummary extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _SavingsOverview extends StatelessWidget {
+  const _SavingsOverview({required this.data});
+
+  final DashboardLoaded data;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.savingsGoals.isEmpty) {
+      return _AnalyticsCard(
+        title: 'Savings',
+        subtitle: 'Goals progress',
+        onSeeAll: () => context.go('/savings-goals'),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No savings goals yet',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final totalSaved = data.savingsGoals.fold<double>(
+      0,
+      (sum, g) => sum + g.currentAmount,
+    );
+    final totalTarget = data.savingsGoals.fold<double>(
+      0,
+      (sum, g) => sum + g.targetAmount,
+    );
+    final overallProgress =
+        totalTarget > 0 ? (totalSaved / totalTarget).clamp(0.0, 1.0) : 0.0;
+
+    return _AnalyticsCard(
+      title: 'Savings',
+      subtitle: 'Goals progress',
+      onSeeAll: () => context.go('/savings-goals'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${CurrencyFormatter.format(totalSaved, Currency.usd)} of ${CurrencyFormatter.format(totalTarget, Currency.usd)}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: overallProgress,
+            minHeight: 6,
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          ...data.savingsGoals.take(3).map((g) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        g.name,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    Text(
+                      '${(g.progressPercent * 100).toStringAsFixed(0)}%',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
     );
   }
 }

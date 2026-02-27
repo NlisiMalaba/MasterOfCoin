@@ -2,14 +2,16 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../shared/domain/currency.dart';
 import '../app_database.dart';
-import '../daos/transaction_dao.dart';
+import 'savings_usage_dao.dart';
+import 'transaction_dao.dart';
 import '../../../features/savings_goals/domain/entity/savings_goal.dart';
 
 class SavingsGoalDao {
-  SavingsGoalDao(this._db, this._transactionDao);
+  SavingsGoalDao(this._db, this._transactionDao, this._savingsUsageDao);
 
   final AppDatabase _db;
   final TransactionDao _transactionDao;
+  final SavingsUsageDao _savingsUsageDao;
 
   static const String _table = 'savings_goals';
 
@@ -64,8 +66,10 @@ class SavingsGoalDao {
   }
 
   Future<SavingsGoal> _withCurrentAmount(SavingsGoal goal) async {
-    final amount = await _transactionDao.sumSavingsByGoal(goal.id);
-    return goal.copyWith(currentAmount: amount);
+    final contributions = await _transactionDao.sumSavingsByGoal(goal.id);
+    final withdrawals = await _savingsUsageDao.sumByGoal(goal.id);
+    final current = (contributions - withdrawals).clamp(0.0, double.infinity);
+    return goal.copyWith(currentAmount: current);
   }
 
   Map<String, dynamic> _toMap(SavingsGoal goal) {

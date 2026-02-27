@@ -5,9 +5,33 @@ class Migrations {
   Migrations._();
 
   static Future<void> runMigrations(Database db, int version) async {
-    if (version >= 1) {
-      await _createV1Schema(db);
+    for (var v = 1; v <= version; v++) {
+      await runMigration(db, v);
     }
+  }
+
+  static Future<void> runMigration(Database db, int version) async {
+    if (version == 1) {
+      await _createV1Schema(db);
+    } else if (version == 2) {
+      await _migrateV2(db);
+    }
+  }
+
+  static Future<void> _migrateV2(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings_usage (
+        id TEXT PRIMARY KEY,
+        savings_goal_id TEXT NOT NULL,
+        amount REAL NOT NULL,
+        purpose TEXT NOT NULL,
+        date INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (savings_goal_id) REFERENCES savings_goals(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_savings_usage_goal ON savings_usage(savings_goal_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_savings_usage_date ON savings_usage(date)');
   }
 
   static Future<void> _createV1Schema(Database db) async {

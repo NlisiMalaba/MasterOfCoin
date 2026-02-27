@@ -6,7 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import 'migrations.dart';
 
 const String _dbName = 'master_of_coin.db';
-const int _dbVersion = 1;
+const int _dbVersion = 2;
 
 /// SQLite database for MasterOfCoin.
 class AppDatabase {
@@ -23,6 +23,7 @@ class AppDatabase {
       join(path, _dbName),
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
     _initCompleter.complete();
   }
@@ -47,5 +48,11 @@ class AppDatabase {
 
   Future<void> _onCreate(Database db, int version) async {
     await Migrations.runMigrations(db, version);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    for (var v = oldVersion + 1; v <= newVersion; v++) {
+      await Migrations.runMigration(db, v);
+    }
   }
 }
