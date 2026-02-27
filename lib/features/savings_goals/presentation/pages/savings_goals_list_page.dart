@@ -295,69 +295,219 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
+        builder: (ctx, setModalState) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(goal != null ? 'Edit Goal' : 'New Savings Goal',
-                    style: Theme.of(ctx).textTheme.titleLarge),
-                const SizedBox(height: 16),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(ctx).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.savings_outlined,
+                        size: 28,
+                        color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        goal != null ? 'Edit savings goal' : 'New savings goal',
+                        style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'What are you saving for?',
+                  style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. New phone, Laptop, Vacation',
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                Text(
+                  'Target amount',
+                  style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Target Amount'),
-                ),
-                const SizedBox(height: 16),
-                SegmentedButton<Currency>(
-                  segments: Currency.values.map((c) => ButtonSegment(value: c, label: Text(c.code))).toList(),
-                  selected: {currency},
-                  onSelectionChanged: (s) => setModalState(() => currency = s.first),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  title: Text(deadline != null
-                      ? 'Due: ${deadline!.day}/${deadline!.month}/${deadline!.year}'
-                      : 'Set deadline'),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final pick = await showDatePicker(
-                      context: ctx,
-                      initialDate: deadline ?? DateTime.now().add(const Duration(days: 30)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                    );
-                    if (pick != null) setModalState(() => deadline = pick);
-                  },
+                  style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                  decoration: InputDecoration(
+                    hintText: '0.00',
+                    prefixText: '${currency.symbol} ',
+                    prefixStyle: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 24),
+                Text(
+                  'Currency',
+                  style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    FilledButton(
-                      onPressed: () {
-                        final amount = double.tryParse(amountController.text);
-                        if (nameController.text.trim().isEmpty || amount == null || amount <= 0) {
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(content: Text('Enter name and valid amount')),
-                          );
-                          return;
-                        }
-                        Navigator.pop(ctx, true);
-                      },
-                      child: const Text('Save'),
+                    Expanded(
+                      child: _CurrencyOption(
+                        value: Currency.usd,
+                        selected: currency == Currency.usd,
+                        onTap: () => setModalState(() => currency = Currency.usd),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CurrencyOption(
+                        value: Currency.zwg,
+                        selected: currency == Currency.zwg,
+                        onTap: () => setModalState(() => currency = Currency.zwg),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Deadline (optional)',
+                  style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Material(
+                  color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () async {
+                      final pick = await showDatePicker(
+                        context: ctx,
+                        initialDate: deadline ?? DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                      );
+                      if (pick != null) setModalState(() => deadline = pick);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(ctx).colorScheme.outline.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 22,
+                            color: Theme.of(ctx).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              deadline != null
+                                  ? '${deadline!.day}/${deadline!.month}/${deadline!.year}'
+                                  : 'Pick a target date',
+                              style: Theme.of(ctx).textTheme.bodyLarge?.copyWith(
+                                    color: deadline != null
+                                        ? Theme.of(ctx).colorScheme.onSurface
+                                        : Theme.of(ctx).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                          if (deadline != null)
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () => setModalState(() => deadline = null),
+                              style: IconButton.styleFrom(
+                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.all(4),
+                              ),
+                            )
+                          else
+                            Icon(
+                              Icons.chevron_right,
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton(
+                        onPressed: () {
+                          final amount = double.tryParse(amountController.text);
+                          if (nameController.text.trim().isEmpty || amount == null || amount <= 0) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(content: Text('Enter name and valid amount')),
+                            );
+                            return;
+                          }
+                          Navigator.pop(ctx, true);
+                        },
+                        child: const Text('Save goal'),
+                      ),
                     ),
                   ],
                 ),
@@ -390,6 +540,57 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
       }
       _load();
     }
+  }
+}
+
+class _CurrencyOption extends StatelessWidget {
+  const _CurrencyOption({
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Currency value;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final surface = Theme.of(context).colorScheme.surface;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? primary : surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? primary
+                  : onSurfaceVariant.withValues(alpha: 0.4),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              value.code,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: selected ? Colors.white : onSurface,
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
