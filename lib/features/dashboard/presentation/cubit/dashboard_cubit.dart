@@ -59,9 +59,11 @@ class DashboardCubit extends Cubit<DashboardState> {
       );
 
       // Total balance (all-time)
+      // Income excludes savings allocations - money allocated to savings deducts from available balance
       final usdIncomeTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
         Currency.usd.code,
+        excludeSavingsAllocations: true,
       );
       final usdExpensesTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.expense,
@@ -70,14 +72,24 @@ class DashboardCubit extends Cubit<DashboardState> {
       final zwgIncomeTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
         Currency.zwg.code,
+        excludeSavingsAllocations: true,
       );
       final zwgExpensesTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.expense,
         Currency.zwg.code,
       );
 
-      final usdBalance = usdIncomeTotal - usdExpensesTotal;
-      final zwgBalance = zwgIncomeTotal - zwgExpensesTotal;
+      // Subtract savings from balance (allocated money is set aside, not spendable)
+      final allGoals = await _savingsGoalDao.getAll();
+      final usdSavingsTotal = allGoals
+          .where((g) => g.currency == Currency.usd)
+          .fold<double>(0, (sum, g) => sum + g.currentAmount);
+      final zwgSavingsTotal = allGoals
+          .where((g) => g.currency == Currency.zwg)
+          .fold<double>(0, (sum, g) => sum + g.currentAmount);
+
+      final usdBalance = usdIncomeTotal - usdExpensesTotal - usdSavingsTotal;
+      final zwgBalance = zwgIncomeTotal - zwgExpensesTotal - zwgSavingsTotal;
 
       // Expenses by category (this month, USD)
       final byCategoryRaw = await _transactionDao.expensesByCategory(
@@ -122,7 +134,6 @@ class DashboardCubit extends Cubit<DashboardState> {
           allMonths.map((m) => expensesByMonth[m] ?? 0.0).toList();
 
       // Savings goals summary (USD only for dashboard)
-      final allGoals = await _savingsGoalDao.getAll();
       final savingsGoals = allGoals
           .where((g) => g.currency == Currency.usd)
           .map((g) => SavingsGoalSummary(

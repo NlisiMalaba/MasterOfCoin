@@ -92,10 +92,14 @@ class TransactionDao {
     String currency, {
     int? startDate,
     int? endDate,
+    bool excludeSavingsAllocations = false,
   }) async {
     var where = 'type = ? AND currency = ?';
     var args = <dynamic>[type.name, currency];
 
+    if (excludeSavingsAllocations && type == TransactionType.income) {
+      where += ' AND (savings_goal_id IS NULL OR savings_goal_id = "")';
+    }
     if (startDate != null) {
       where += ' AND date >= ?';
       args.add(startDate);
