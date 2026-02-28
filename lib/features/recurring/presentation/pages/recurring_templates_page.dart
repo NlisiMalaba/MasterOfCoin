@@ -28,7 +28,11 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
   late ExpenseCategoryDao _expenseDao;
 
   List<RecurringTemplateRow> _templates = [];
+  Currency _selectedCurrency = Currency.usd;
   bool _loading = true;
+
+  List<RecurringTemplateRow> get _filteredTemplates =>
+      _templates.where((t) => t.currency == _selectedCurrency).toList();
 
   @override
   void initState() {
@@ -106,32 +110,51 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _templates.isEmpty
-              ? _EmptyState(onAdd: () => _showForm(context))
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                    itemCount: _templates.length,
-                    itemBuilder: (context, i) {
-                      final t = _templates[i];
-                      return _TemplateCard(
-                        template: t,
-                        onApply: () => _applyTemplate(t),
-                        onEdit: () => _showForm(context, existing: t),
-                        onDelete: () async {
-                          await _templateDao.delete(t.id);
-                          await _load();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Template deleted')),
-                            );
-                          }
-                        },
-                      );
-                    },
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: FilterSegmentButtons<Currency>(
+                    options: Currency.values,
+                    selected: _selectedCurrency,
+                    onChanged: (c) => setState(() => _selectedCurrency = c),
+                    labelBuilder: (c) => c.code,
                   ),
                 ),
+                Expanded(
+                  child: _filteredTemplates.isEmpty
+                      ? _EmptyState(
+                          currency: _selectedCurrency,
+                          onAdd: () => _showForm(context),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                            itemCount: _filteredTemplates.length,
+                            itemBuilder: (context, i) {
+                              final t = _filteredTemplates[i];
+                              return _TemplateCard(
+                                template: t,
+                                onApply: () => _applyTemplate(t),
+                                onEdit: () => _showForm(context, existing: t),
+                                onDelete: () async {
+                                  await _templateDao.delete(t.id);
+                                  await _load();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Template deleted')),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showForm(context),
         icon: const Icon(Icons.add),
@@ -144,7 +167,7 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
     TransactionType type = existing != null
         ? (existing.type == 'income' ? TransactionType.income : TransactionType.expense)
         : TransactionType.expense;
-    Currency currency = existing?.currency ?? Currency.usd;
+    Currency currency = existing?.currency ?? _selectedCurrency;
     final amountController = TextEditingController(
       text: existing?.amount.toStringAsFixed(2) ?? '',
     );
@@ -441,8 +464,9 @@ class _TemplateCard extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAdd});
+  const _EmptyState({required this.currency, required this.onAdd});
 
+  final Currency currency;
   final VoidCallback onAdd;
 
   @override
@@ -467,14 +491,14 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'No recurring templates',
+              'No ${currency.code} recurring templates',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Create weekly or monthly templates for salaries, rent, and more',
+              'Create ${currency.code} templates for salaries, rent, and more',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
