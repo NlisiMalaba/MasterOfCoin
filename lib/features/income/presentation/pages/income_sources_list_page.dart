@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/income_source_dao.dart';
+import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../domain/entity/income_source.dart';
@@ -18,7 +19,11 @@ class IncomeSourcesListPage extends StatefulWidget {
 class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
   late IncomeSourceDao _dao;
   List<IncomeSource> _sources = [];
+  Currency _selectedCurrency = Currency.usd;
   bool _loading = true;
+
+  List<IncomeSource> get _filteredSources =>
+      _sources.where((s) => s.currency == _selectedCurrency).toList();
 
   @override
   void initState() {
@@ -40,7 +45,7 @@ class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
 
   Future<void> _showForm({IncomeSource? existing}) async {
     final nameController = TextEditingController(text: existing?.name ?? '');
-    Currency currency = existing?.currency ?? Currency.usd;
+    Currency currency = existing?.currency ?? _selectedCurrency;
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -263,15 +268,31 @@ class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _sources.isEmpty
-              ? _EmptyState(onAdd: () => _showForm())
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                    itemCount: _sources.length,
-                    itemBuilder: (context, i) {
-                      final s = _sources[i];
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: FilterSegmentButtons<Currency>(
+                    options: Currency.values,
+                    selected: _selectedCurrency,
+                    onChanged: (c) => setState(() => _selectedCurrency = c),
+                    labelBuilder: (c) => c.code,
+                  ),
+                ),
+                Expanded(
+                  child: _filteredSources.isEmpty
+                      ? _EmptyState(
+                          currency: _selectedCurrency,
+                          onAdd: () => _showForm(),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                            itemCount: _filteredSources.length,
+                            itemBuilder: (context, i) {
+                              final s = _filteredSources[i];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 0,
@@ -295,12 +316,7 @@ class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
                             s.name,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          subtitle: Text(
-                            s.currency.code,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
+                          subtitle: null,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -316,9 +332,12 @@ class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
                           ),
                         ),
                       );
-                    },
-                  ),
+                            },
+                          ),
+                        ),
                 ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showForm(),
         icon: const Icon(Icons.add),
@@ -329,8 +348,9 @@ class _IncomeSourcesListPageState extends State<IncomeSourcesListPage> {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAdd});
+  const _EmptyState({required this.currency, required this.onAdd});
 
+  final Currency currency;
   final VoidCallback onAdd;
 
   @override
@@ -355,14 +375,14 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'No income sources yet',
+              'No ${currency.code} income sources',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add salary, freelance, or other income streams',
+              'Add ${currency.code} sources for salary, freelance, etc.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

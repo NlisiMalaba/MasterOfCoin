@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/budget_allocation_dao.dart';
+import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
@@ -249,25 +250,16 @@ class _BudgetsPageState extends State<BudgetsPage> {
                                 ),
                           ),
                           const SizedBox(height: 16),
-                          SegmentedButton<Currency>(
-                            style: ButtonStyle(
-                              padding: WidgetStateProperty.all(
-                                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                            ),
-                            segments: Currency.values
-                                .map((c) => ButtonSegment(
-                                      value: c,
-                                      label: Text('${c.symbol} ${c.code}'),
-                                    ))
-                                .toList(),
-                            selected: {_currency},
-                            onSelectionChanged: (s) {
+                          FilterSegmentButtons<Currency>(
+                            options: Currency.values,
+                            selected: _currency,
+                            onChanged: (c) {
                               setState(() {
-                                _currency = s.first;
+                                _currency = c;
                                 _load();
                               });
                             },
+                            labelBuilder: (c) => c.code,
                           ),
                         ],
                       ),

@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/recurring_template_dao.dart';
+import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/income_source_dao.dart';
@@ -211,13 +212,11 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                SegmentedButton<TransactionType>(
-                  segments: const [
-                    ButtonSegment(value: TransactionType.income, label: Text('Income')),
-                    ButtonSegment(value: TransactionType.expense, label: Text('Expense')),
-                  ],
-                  selected: {type},
-                  onSelectionChanged: (s) => setModalState(() => type = s.first),
+                FilterSegmentButtons<TransactionType>(
+                  options: [TransactionType.income, TransactionType.expense],
+                  selected: type,
+                  onChanged: (t) => setModalState(() => type = t),
+                  labelBuilder: (t) => t.name[0].toUpperCase() + t.name.substring(1),
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -238,12 +237,11 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                SegmentedButton<Currency>(
-                  segments: Currency.values
-                      .map((c) => ButtonSegment(value: c, label: Text(c.code)))
-                      .toList(),
-                  selected: {currency},
-                  onSelectionChanged: (s) => setModalState(() => currency = s.first),
+                FilterSegmentButtons<Currency>(
+                  options: Currency.values,
+                  selected: currency,
+                  onChanged: (c) => setModalState(() => currency = c),
+                  labelBuilder: (c) => c.code,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(

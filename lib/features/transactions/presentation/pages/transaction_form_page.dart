@@ -8,6 +8,7 @@ import '../../../../core/database/daos/transaction_dao.dart'
 import '../../../../core/database/daos/income_source_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
+import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/utils/transaction_mappers.dart';
 import '../../../../shared/domain/currency.dart';
@@ -219,8 +220,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                         children: [
                           _SectionLabel(label: 'Type'),
                           const SizedBox(height: 8),
-                          _TypeSelector(
-                            value: _type,
+                          FilterSegmentButtons<TransactionType>(
+                            options: [TransactionType.income, TransactionType.expense],
+                            selected: _type,
                             onChanged: (t) {
                               setState(() {
                                 _type = t;
@@ -228,6 +230,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                                 _loadData();
                               });
                             },
+                            labelBuilder: (t) => t.name[0].toUpperCase() + t.name.substring(1),
                           ),
                           const SizedBox(height: 24),
                           _SectionLabel(label: 'Amount'),
@@ -251,8 +254,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                           const SizedBox(height: 16),
                           _SectionLabel(label: 'Currency'),
                           const SizedBox(height: 8),
-                          _CurrencySelector(
-                            value: _currency,
+                          FilterSegmentButtons<Currency>(
+                            options: Currency.values,
+                            selected: _currency,
                             onChanged: (c) {
                               setState(() {
                                 _currency = c;
@@ -260,6 +264,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                                 _loadData();
                               });
                             },
+                            labelBuilder: (c) => c.code,
                           ),
                           const SizedBox(height: 24),
                           if (_type == TransactionType.income) ...[
@@ -394,151 +399,6 @@ class _SectionLabel extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
-    );
-  }
-}
-
-class _TypeSelector extends StatelessWidget {
-  const _TypeSelector({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final TransactionType value;
-  final ValueChanged<TransactionType> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SelectorCard(
-            selected: value == TransactionType.income,
-            icon: Icons.south_west,
-            label: 'Income',
-            accentColor: const Color(0xFF2E7D32),
-            onTap: () => onChanged(TransactionType.income),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SelectorCard(
-            selected: value == TransactionType.expense,
-            icon: Icons.north_east,
-            label: 'Expense',
-            accentColor: const Color(0xFFC62828),
-            onTap: () => onChanged(TransactionType.expense),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CurrencySelector extends StatelessWidget {
-  const _CurrencySelector({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final Currency value;
-  final ValueChanged<Currency> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SelectorCard(
-            selected: value == Currency.usd,
-            label: 'USD',
-            compact: true,
-            onTap: () => onChanged(Currency.usd),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SelectorCard(
-            selected: value == Currency.zwg,
-            label: 'ZWG',
-            compact: true,
-            onTap: () => onChanged(Currency.zwg),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SelectorCard extends StatelessWidget {
-  const _SelectorCard({
-    required this.selected,
-    required this.label,
-    required this.onTap,
-    this.icon,
-    this.accentColor,
-    this.compact = false,
-  });
-
-  final bool selected;
-  final String label;
-  final VoidCallback onTap;
-  final IconData? icon;
-  final Color? accentColor;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final surface = Theme.of(context).colorScheme.surface;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
-    final color = accentColor ?? primary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            vertical: compact ? 14 : 18,
-            horizontal: 16,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? color : surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected
-                  ? color
-                  : onSurfaceVariant.withValues(alpha: 0.4),
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: compact ? 20 : 28,
-                  color: selected ? Colors.white : color,
-                ),
-                SizedBox(height: compact ? 4 : 8),
-              ],
-              Text(
-                label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: selected ? Colors.white : onSurface,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

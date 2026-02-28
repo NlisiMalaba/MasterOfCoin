@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
 import '../../../../core/database/daos/savings_usage_dao.dart' show SavingsUsageDao, SavingsUsageRow;
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../domain/entity/savings_goal.dart';
@@ -396,24 +397,11 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
                       ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CurrencyOption(
-                        value: Currency.usd,
-                        selected: currency == Currency.usd,
-                        onTap: () => setModalState(() => currency = Currency.usd),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CurrencyOption(
-                        value: Currency.zwg,
-                        selected: currency == Currency.zwg,
-                        onTap: () => setModalState(() => currency = Currency.zwg),
-                      ),
-                    ),
-                  ],
+                FilterSegmentButtons<Currency>(
+                  options: Currency.values,
+                  selected: currency,
+                  onChanged: (c) => setModalState(() => currency = c),
+                  labelBuilder: (c) => c.code,
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -542,57 +530,6 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
       }
       _load();
     }
-  }
-}
-
-class _CurrencyOption extends StatelessWidget {
-  const _CurrencyOption({
-    required this.value,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Currency value;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final surface = Theme.of(context).colorScheme.surface;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: selected ? primary : surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected
-                  ? primary
-                  : onSurfaceVariant.withValues(alpha: 0.4),
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              value.code,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: selected ? Colors.white : onSurface,
-                  ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
