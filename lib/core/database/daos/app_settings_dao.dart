@@ -13,6 +13,8 @@ class AppSettingsDao {
   static const String keyExchangeRate = 'exchange_rate';
   static const String keyOnboardingComplete = 'onboarding_complete';
   static const String keyThemeMode = 'theme_mode';
+  static const String keyEncryptBackups = 'backup_encrypt';
+  static const String keyScheduledBackupsEnabled = 'backup_scheduled';
 
   Future<String?> getString(String key) async {
     final rows = await _db.db.query(

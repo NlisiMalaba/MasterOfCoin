@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_state.dart';
+import '../../../../core/backup/backup_restore_result.dart';
+import '../../../../core/backup/backup_restore_service.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/app_settings_dao.dart';
 import '../../../../shared/domain/currency.dart';
@@ -16,6 +18,42 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   Currency _selectedCurrency = Currency.usd;
   bool _isLoading = false;
+  bool _isRestoring = false;
+
+  Future<void> _restoreFromBackup() async {
+    setState(() => _isRestoring = true);
+    try {
+      final result = await getIt<BackupRestoreService>().restore();
+      if (!mounted) return;
+      switch (result) {
+        case RestoreSuccess():
+          await getIt<AppSettingsDao>().setBool(
+            AppSettingsDao.keyOnboardingComplete,
+            true,
+          );
+          AppState.setOnboardingComplete(true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Data restored. Welcome back!')),
+            );
+            context.go('/');
+          }
+        case BackupRestoreFailure(:final message):
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        case BackupRestoreCancelled():
+          break;
+        case BackupSuccess():
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
+  }
 
   Future<void> _completeOnboarding() async {
     setState(() => _isLoading = true);
@@ -64,6 +102,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: _isRestoring
+                    ? null
+                    : _restoreFromBackup,
+                icon: _isRestoring
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cloud_download, size: 20),
+                label: Text(_isRestoring ? 'Restoring…' : 'Restore from backup'),
               ),
               const Spacer(),
               Text(

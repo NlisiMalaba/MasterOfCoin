@@ -19,6 +19,10 @@ migrate_working_dir/
 # VS Code
 .vscode/
 
+# Env / Secrets
+.env
+lib/core/backup/backup_env.g.dart
+
 # Flutter/Dart
 .dart_tool/
 .flutter-plugins

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../backup/backup_restore_service.dart';
+import '../backup/backup_scheduler.dart';
 import '../database/app_database.dart';
 import '../database/daos/transaction_dao.dart';
 import '../database/daos/income_source_dao.dart';
@@ -23,14 +24,20 @@ Future<void> configureDependencies() async {
   await AppDatabase.instance.init(appDocDir.path);
 
   getIt.registerSingleton<AppDatabase>(AppDatabase.instance);
-  getIt.registerSingleton<BackupRestoreService>(
-    BackupRestoreService(database: getIt<AppDatabase>()),
-  );
+  getIt.registerSingleton<AppSettingsDao>(AppSettingsDao(AppDatabase.instance));
   getIt.registerSingleton<TransactionDao>(TransactionDao(AppDatabase.instance));
   getIt.registerSingleton<IncomeSourceDao>(IncomeSourceDao(AppDatabase.instance));
   getIt.registerSingleton<ExpenseCategoryDao>(ExpenseCategoryDao(AppDatabase.instance));
   getIt.registerSingleton<BudgetAllocationDao>(BudgetAllocationDao(AppDatabase.instance));
-  getIt.registerSingleton<AppSettingsDao>(AppSettingsDao(AppDatabase.instance));
+  getIt.registerSingleton<BackupRestoreService>(
+    BackupRestoreService(
+      database: getIt<AppDatabase>(),
+      settingsDao: getIt<AppSettingsDao>(),
+    ),
+  );
+  getIt.registerSingleton<BackupScheduler>(
+    BackupScheduler(settingsDao: getIt<AppSettingsDao>()),
+  );
   getIt.registerSingleton<ThemeController>(
     ThemeController(getIt<AppSettingsDao>()),
   );

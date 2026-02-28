@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/backup/backup_restore_result.dart';
 import '../../../../core/backup/backup_restore_service.dart';
+import '../../../../core/backup/backup_scheduler.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/app_settings_dao.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
@@ -24,8 +25,11 @@ class _SettingsPageState extends State<SettingsPage> {
   late IncomeSourceDao _incomeDao;
   late ExpenseCategoryDao _expenseDao;
   late BackupRestoreService _backupRestoreService;
+  late BackupScheduler _backupScheduler;
   Currency? _defaultCurrency;
   double? _exchangeRate;
+  bool _encryptBackups = false;
+  bool _scheduledBackups = false;
   List<IncomeSource> _incomeSources = [];
   List<ExpenseCategory> _expenseCategories = [];
 
@@ -36,12 +40,15 @@ class _SettingsPageState extends State<SettingsPage> {
     _incomeDao = getIt<IncomeSourceDao>();
     _expenseDao = getIt<ExpenseCategoryDao>();
     _backupRestoreService = getIt<BackupRestoreService>();
+    _backupScheduler = getIt<BackupScheduler>();
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
     final currencyCode = await _settingsDao.getString(AppSettingsDao.keyDefaultCurrency);
     final rate = await _settingsDao.getDouble(AppSettingsDao.keyExchangeRate);
+    final encrypt = await _settingsDao.getBool(AppSettingsDao.keyEncryptBackups);
+    final scheduled = await _settingsDao.getBool(AppSettingsDao.keyScheduledBackupsEnabled);
     final sources = await _incomeDao.getAll(activeOnly: false);
     final categories = await _expenseDao.getAll();
     if (mounted) {
@@ -49,6 +56,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _defaultCurrency =
             currencyCode != null ? Currency.fromCode(currencyCode) : Currency.usd;
         _exchangeRate = rate ?? 1.00;
+        _encryptBackups = encrypt;
+        _scheduledBackups = scheduled;
         _incomeSources = sources;
         _expenseCategories = categories;
       });
@@ -89,6 +98,22 @@ class _SettingsPageState extends State<SettingsPage> {
                             'Restore from a previous backup file',
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: _restore,
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsSwitchTile(
+                        icon: Icons.lock,
+                        title: 'Encrypt backups',
+                        subtitle: 'Use AES encryption when backing up (recommended for cloud)',
+                        value: _encryptBackups,
+                        onChanged: _setEncryptBackups,
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsSwitchTile(
+                        icon: Icons.schedule,
+                        title: 'Scheduled backups',
+                        subtitle: 'Automatic weekly backup to app storage',
+                        value: _scheduledBackups,
+                        onChanged: _setScheduledBackups,
                       ),
                     ],
                   ),
@@ -215,6 +240,17 @@ class _SettingsPageState extends State<SettingsPage> {
       await _settingsDao.setString(AppSettingsDao.keyDefaultCurrency, picked.code);
       setState(() => _defaultCurrency = picked);
     }
+  }
+
+  Future<void> _setEncryptBackups(bool value) async {
+    await _settingsDao.setBool(AppSettingsDao.keyEncryptBackups, value);
+    setState(() => _encryptBackups = value);
+  }
+
+  Future<void> _setScheduledBackups(bool value) async {
+    await _settingsDao.setBool(AppSettingsDao.keyScheduledBackupsEnabled, value);
+    await _backupScheduler.updateSchedule();
+    setState(() => _scheduledBackups = value);
   }
 
   Future<void> _backup() async {
@@ -360,6 +396,64 @@ class _SettingsSection extends StatelessWidget {
           child: Column(children: children),
         ),
       ],
+    );
+  }
+}
+
+class _SettingsSwitchTile extends StatelessWidget {
+  const _SettingsSwitchTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
     );
   }
 }
