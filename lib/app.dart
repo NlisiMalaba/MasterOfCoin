@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/app_state.dart';
 import 'core/di/injection.dart';
@@ -15,12 +16,16 @@ class MasterOfCoinApp extends StatefulWidget {
 
 class _MasterOfCoinAppState extends State<MasterOfCoinApp> {
   late final ThemeController _themeController;
+  late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     _themeController = getIt<ThemeController>();
     _themeController.addListener(_onThemeChanged);
+    _router = AppRouter.createRouter(
+      isOnboardingComplete: () => AppState.isOnboardingComplete,
+    );
   }
 
   void _onThemeChanged() => setState(() {});
@@ -39,9 +44,7 @@ class _MasterOfCoinAppState extends State<MasterOfCoinApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeController.value,
-      routerConfig: AppRouter.createRouter(
-        isOnboardingComplete: () => AppState.isOnboardingComplete,
-      ),
+      routerConfig: _router,
     );
   }
 }
