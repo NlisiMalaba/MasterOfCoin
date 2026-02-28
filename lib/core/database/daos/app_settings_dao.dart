@@ -12,6 +12,7 @@ class AppSettingsDao {
   static const String keyDefaultCurrency = 'default_currency';
   static const String keyExchangeRate = 'exchange_rate';
   static const String keyOnboardingComplete = 'onboarding_complete';
+  static const String keyThemeMode = 'theme_mode';
 
   Future<String?> getString(String key) async {
     final rows = await _db.db.query(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/transaction_mappers.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/widgets/currency_display.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/di/injection.dart';
@@ -67,6 +68,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transactions'),
+        actions: const [ThemeToggleButton()],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

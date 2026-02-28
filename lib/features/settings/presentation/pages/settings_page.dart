@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/app_settings_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/database/daos/income_source_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
 import '../../../../shared/domain/currency.dart';
@@ -53,6 +54,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        actions: const [ThemeToggleButton()],
       ),
       body: _defaultCurrency == null
           ? const Center(child: CircularProgressIndicator())

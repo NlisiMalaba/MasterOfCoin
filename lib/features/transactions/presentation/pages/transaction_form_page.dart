@@ -8,6 +8,7 @@ import '../../../../core/database/daos/transaction_dao.dart'
 import '../../../../core/database/daos/income_source_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/utils/transaction_mappers.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../../../shared/domain/transaction_type.dart';
@@ -203,6 +204,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),
         ),
+        actions: const [ThemeToggleButton()],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

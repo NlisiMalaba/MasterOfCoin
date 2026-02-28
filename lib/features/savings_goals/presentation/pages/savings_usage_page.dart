@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/savings_usage_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../domain/entity/savings_usage.dart';
@@ -44,6 +45,7 @@ class _SavingsUsagePageState extends State<SavingsUsagePage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: const [ThemeToggleButton()],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

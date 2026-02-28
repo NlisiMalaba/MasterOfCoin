@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../../../shared/domain/transaction_type.dart';
@@ -142,6 +143,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       appBar: AppBar(
         title: const Text('Analytics'),
         actions: [
+          const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.calendar_month),
             onPressed: () async {

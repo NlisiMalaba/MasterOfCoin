@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/currency_display.dart';
 import '../../../../shared/domain/currency.dart';
@@ -40,6 +41,7 @@ class DashboardPage extends StatelessWidget {
                     floating: true,
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     title: const Text('Master of Coin'),
+                    actions: const [ThemeToggleButton()],
                   ),
                   SliverToBoxAdapter(
                     child: Padding(

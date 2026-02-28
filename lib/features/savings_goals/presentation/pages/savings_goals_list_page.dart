@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
 import '../../../../core/database/daos/savings_usage_dao.dart' show SavingsUsageDao, SavingsUsageRow;
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../domain/entity/savings_goal.dart';
 
@@ -147,6 +148,7 @@ class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
       appBar: AppBar(
         title: const Text('Savings Goals'),
         actions: [
+          const ThemeToggleButton(),
           TextButton.icon(
             onPressed: () => context.push('/savings-usage'),
             icon: const Icon(Icons.shopping_bag_outlined, size: 20),

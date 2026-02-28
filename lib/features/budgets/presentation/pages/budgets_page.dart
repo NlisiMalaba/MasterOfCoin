@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/budget_allocation_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -117,6 +118,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
         title: const Text('Budgets'),
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
         actions: [
+          const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.calendar_month),
             onPressed: () async {

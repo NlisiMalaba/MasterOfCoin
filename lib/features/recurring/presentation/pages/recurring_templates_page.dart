@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/recurring_template_dao.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/income_source_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
@@ -95,6 +96,7 @@ class _RecurringTemplatesPageState extends State<RecurringTemplatesPage> {
       appBar: AppBar(
         title: const Text('Recurring'),
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+        actions: const [ThemeToggleButton()],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
