@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/backup/backup_restore_result.dart';
+import '../../../../core/backup/backup_restore_service.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/app_settings_dao.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
@@ -21,6 +23,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late AppSettingsDao _settingsDao;
   late IncomeSourceDao _incomeDao;
   late ExpenseCategoryDao _expenseDao;
+  late BackupRestoreService _backupRestoreService;
   Currency? _defaultCurrency;
   double? _exchangeRate;
   List<IncomeSource> _incomeSources = [];
@@ -32,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _settingsDao = getIt<AppSettingsDao>();
     _incomeDao = getIt<IncomeSourceDao>();
     _expenseDao = getIt<ExpenseCategoryDao>();
+    _backupRestoreService = getIt<BackupRestoreService>();
     _loadSettings();
   }
 
@@ -65,6 +69,30 @@ class _SettingsPageState extends State<SettingsPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                 children: [
+                  _SettingsSection(
+                    icon: Icons.backup,
+                    title: 'Data',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.cloud_upload,
+                        title: 'Backup',
+                        subtitle:
+                            'Save your data to Google Drive or device. Restore after losing your phone.',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: _backup,
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.cloud_download,
+                        title: 'Restore',
+                        subtitle:
+                            'Restore from a previous backup file',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: _restore,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                   _SettingsSection(
                     icon: Icons.tune,
                     title: 'General',
@@ -187,6 +215,63 @@ class _SettingsPageState extends State<SettingsPage> {
       await _settingsDao.setString(AppSettingsDao.keyDefaultCurrency, picked.code);
       setState(() => _defaultCurrency = picked);
     }
+  }
+
+  Future<void> _backup() async {
+    final result = await _backupRestoreService.backup();
+    if (!mounted) return;
+    _showBackupRestoreResult(result);
+  }
+
+  Future<void> _restore() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Restore from Backup?'),
+        content: const Text(
+          'This will replace all your current data with the backup. '
+          'Your existing data will be overwritten.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final result = await _backupRestoreService.restore();
+    if (!mounted) return;
+    _showBackupRestoreResult(result);
+    if (result is RestoreSuccess) {
+      await _loadSettings();
+    }
+  }
+
+  void _showBackupRestoreResult(BackupRestoreResult result) {
+    final (message, isError) = switch (result) {
+      BackupSuccess() => (
+          'Backup created. Save it to Google Drive or your device.',
+          false
+        ),
+      RestoreSuccess() => ('Data restored successfully.', false),
+      BackupRestoreCancelled() => (null, false),
+      BackupRestoreFailure(:final message) => (message, true),
+    };
+    if (message == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
   }
 
   Future<void> _showExchangeRateDialog(BuildContext context) async {

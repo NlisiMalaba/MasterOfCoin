@@ -16,16 +16,35 @@ class AppDatabase {
 
   Database? _db;
   final _initCompleter = Completer<void>();
+  String? _dbPath;
 
-  Future<void> init(String path) async {
+  /// Full path to the database file. Available after [init] completes.
+  String? get dbPath => _dbPath;
+
+  Future<void> init(String documentsPath) async {
+    _dbPath ??= join(documentsPath, _dbName);
     if (_db != null) return;
     _db = await openDatabase(
-      join(path, _dbName),
+      _dbPath!,
       version: _dbVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
-    _initCompleter.complete();
+    if (!_initCompleter.isCompleted) _initCompleter.complete();
+  }
+
+  /// Reopens the database after restore. Call after replacing the DB file.
+  Future<void> reopen() async {
+    await close();
+    if (_dbPath == null) {
+      throw StateError('Cannot reopen: database was never initialized.');
+    }
+    _db = await openDatabase(
+      _dbPath!,
+      version: _dbVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> get initialized async => _initCompleter.future;
