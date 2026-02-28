@@ -40,13 +40,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final rate = await _settingsDao.getDouble(AppSettingsDao.keyExchangeRate);
     final sources = await _incomeDao.getAll(activeOnly: false);
     final categories = await _expenseDao.getAll();
-    setState(() {
-      _defaultCurrency =
-          currencyCode != null ? Currency.fromCode(currencyCode) : Currency.usd;
-      _exchangeRate = rate ?? 1.00;
-      _incomeSources = sources;
-      _expenseCategories = categories;
-    });
+    if (mounted) {
+      setState(() {
+        _defaultCurrency =
+            currencyCode != null ? Currency.fromCode(currencyCode) : Currency.usd;
+        _exchangeRate = rate ?? 1.00;
+        _incomeSources = sources;
+        _expenseCategories = categories;
+      });
+    }
   }
 
   @override
@@ -58,187 +60,130 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: _defaultCurrency == null
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('General', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ListTile(
-                  title: const Text('Default Currency'),
-                  subtitle: Text(_defaultCurrency!.code),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showCurrencyPicker(context),
-                ),
-                ListTile(
-                  title: const Text('Exchange Rate (1 USD per ZWG)'),
-                  subtitle: Text(_exchangeRate?.toStringAsFixed(2) ?? '—'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showExchangeRateDialog(context),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Income Sources', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ListTile(
-                  title: const Text('Manage Income Sources'),
-                  subtitle: Text('${_incomeSources.length} sources'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showIncomeSourcesList(context),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Expense Categories', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ListTile(
-                  title: const Text('Manage Categories'),
-                  subtitle: Text('${_expenseCategories.length} categories'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showExpenseCategoriesList(context),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('More', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ListTile(
-                  title: const Text('Budgets'),
-                  subtitle: const Text('Monthly budget allocations'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/budgets'),
-                ),
-                ListTile(
-                  title: const Text('Recurring Templates'),
-                  subtitle: const Text('Weekly and monthly templates'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/recurring'),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Future<void> _showIncomeSourcesList(BuildContext context) async {
-    final sources = await _incomeDao.getAll(activeOnly: false);
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Income Sources', style: Theme.of(context).textTheme.titleLarge),
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: sources.length,
-                itemBuilder: (context, i) {
-                  final s = sources[i];
-                  return ListTile(
-                    title: Text(s.name),
-                    subtitle: Text('${s.currency.code}'),
-                    trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
-                              await _incomeDao.delete(s.id);
-                              _loadSettings();
-                              if (mounted) Navigator.pop(context);
-                            },
-                          ),
-                  );
-                },
+          : RefreshIndicator(
+              onRefresh: _loadSettings,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                children: [
+                  _SettingsSection(
+                    icon: Icons.tune,
+                    title: 'General',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.currency_exchange,
+                        title: 'Default Currency',
+                        subtitle: '${_defaultCurrency!.symbol} ${_defaultCurrency!.code}',
+                        onTap: () => _showCurrencyPicker(context),
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.trending_up,
+                        title: 'Exchange Rate',
+                        subtitle: '1 USD = ${_exchangeRate?.toStringAsFixed(2) ?? '—'} ZWG',
+                        onTap: () => _showExchangeRateDialog(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _SettingsSection(
+                    icon: Icons.category,
+                    title: 'Income & Categories',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.account_balance_wallet,
+                        title: 'Income Sources',
+                        subtitle: '${_incomeSources.length} sources',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/income-sources'),
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.label_outline,
+                        title: 'Expense Categories',
+                        subtitle: '${_expenseCategories.length} categories',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/expense-categories'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _SettingsSection(
+                    icon: Icons.dashboard_customize,
+                    title: 'Planning',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.pie_chart_outline,
+                        title: 'Budgets',
+                        subtitle: 'Monthly spending limits by category',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/budgets'),
+                      ),
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.repeat,
+                        title: 'Recurring Templates',
+                        subtitle: 'Weekly and monthly transactions',
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/recurring'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
-  }
-
-  Future<void> _showExpenseCategoriesList(BuildContext context) async {
-    final categories = await _expenseDao.getAll();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Expense Categories', style: Theme.of(context).textTheme.titleLarge),
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: categories.length,
-                itemBuilder: (context, i) {
-                  final c = categories[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: c.color,
-                      child: Icon(c.iconName != null ? _iconForName(c.iconName!) : Icons.category, color: Colors.white, size: 20),
-                    ),
-                    title: Text(c.name),
-                    trailing: c.isSystem
-                        ? const Chip(label: Text('Default', style: TextStyle(fontSize: 10)))
-                        : IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
-                              await _expenseDao.delete(c.id);
-                              _loadSettings();
-                              if (mounted) Navigator.pop(context);
-                            },
-                          ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _iconForName(String name) {
-    const map = {
-      'shopping_cart': Icons.shopping_cart,
-      'directions_car': Icons.directions_car,
-      'checkroom': Icons.checkroom,
-      'bolt': Icons.bolt,
-      'phone_android': Icons.phone_android,
-      'restaurant': Icons.restaurant,
-      'local_hospital': Icons.local_hospital,
-      'school': Icons.school,
-      'movie': Icons.movie,
-      'more_horiz': Icons.more_horiz,
-    };
-    return map[name] ?? Icons.category;
   }
 
   Future<void> _showCurrencyPicker(BuildContext context) async {
-    final picked = await showDialog<Currency>(
+    final picked = await showModalBottomSheet<Currency>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Default Currency'),
-        content: Column(
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).padding.bottom + 24),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: Currency.values.map((c) {
-            return ListTile(
-              title: Text('${c.symbol} ${c.code}'),
-              onTap: () => Navigator.pop(context, c),
-            );
-          }).toList(),
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Default Currency',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...Currency.values.map((c) {
+              final selected = _defaultCurrency == c;
+              return ListTile(
+                leading: Icon(
+                  selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: selected
+                      ? Theme.of(ctx).colorScheme.primary
+                      : Theme.of(ctx).colorScheme.onSurfaceVariant,
+                ),
+                title: Text('${c.symbol} ${c.code}'),
+                onTap: () => Navigator.pop(ctx, c),
+              );
+            }),
+          ],
         ),
       ),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       await _settingsDao.setString(AppSettingsDao.keyDefaultCurrency, picked.code);
       setState(() => _defaultCurrency = picked);
     }
@@ -248,34 +193,155 @@ class _SettingsPageState extends State<SettingsPage> {
     final controller = TextEditingController(text: _exchangeRate?.toString() ?? '');
     final result = await showDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Exchange Rate'),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          autofocus: true,
           decoration: const InputDecoration(
-            labelText: '1 USD per ZWG',
+            labelText: 'ZWG per 1 USD',
             hintText: 'e.g. 1.00',
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
               final v = double.tryParse(controller.text);
-              if (v != null && v > 0) Navigator.pop(context, v);
+              if (v != null && v > 0) Navigator.pop(ctx, v);
             },
             child: const Text('Save'),
           ),
         ],
       ),
     );
-    if (result != null) {
+    if (result != null && mounted) {
       await _settingsDao.setDouble(AppSettingsDao.keyExchangeRate, result);
       setState(() => _exchangeRate = result);
     }
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

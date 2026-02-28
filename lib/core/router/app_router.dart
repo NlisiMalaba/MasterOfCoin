@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'main_shell.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/budgets/presentation/pages/budgets_page.dart';
+import '../../features/expenses/presentation/pages/expense_categories_list_page.dart';
+import '../../features/income/presentation/pages/income_sources_list_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/recurring/presentation/pages/recurring_templates_page.dart';
@@ -25,6 +27,8 @@ class AppRouter {
   static const String budgets = '/budgets';
   static const String analytics = '/analytics';
   static const String recurring = '/recurring';
+  static const String incomeSources = '/income-sources';
+  static const String expenseCategories = '/expense-categories';
   static String editTransaction(String id) => '/transactions/edit/$id';
 
   static GoRouter createRouter({
@@ -127,6 +131,14 @@ class AppRouter {
         GoRoute(
           path: recurring,
           builder: (context, state) => const RecurringTemplatesPage(),
+        ),
+        GoRoute(
+          path: incomeSources,
+          builder: (context, state) => const IncomeSourcesListPage(),
+        ),
+        GoRoute(
+          path: expenseCategories,
+          builder: (context, state) => const ExpenseCategoriesListPage(),
         ),
         GoRoute(
           path: savingsUsage,
