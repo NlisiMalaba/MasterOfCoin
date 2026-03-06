@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -45,6 +46,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
   Currency _currency = Currency.usd;
   DateTime _selectedMonth = DateTime.now();
   bool _loading = true;
+  StreamSubscription<void>? _txSub;
 
   @override
   void initState() {
@@ -52,14 +54,24 @@ class _BudgetsPageState extends State<BudgetsPage> {
     _budgetDao = getIt<BudgetAllocationDao>();
     _txDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
+    _txSub = _txDao.updates.listen((_) {
+      if (mounted) {
+        setState(() {}); // budgets use FutureBuilder for spent amounts
+      }
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _txSub?.cancel();
+    super.dispose();
   }
 
   int get _periodStart => _selectedMonth.startOfMonth.toUnixSeconds;
   int get _periodEnd => _selectedMonth.endOfMonth.toUnixSeconds;
 
   Future<void> _load() async {
-    setState(() => _loading = true);
     final categories = await _categoryDao.getAll();
     final allocations = await _budgetDao.getForPeriod(_periodStart, _periodEnd);
     if (mounted) {

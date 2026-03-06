@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -17,14 +18,24 @@ class DashboardCubit extends Cubit<DashboardState> {
     _transactionDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
     _savingsDao = getIt<SavingsGoalDao>();
+    _txSub = _transactionDao.updates.listen((_) => load());
   }
 
   late final TransactionDao _transactionDao;
   late final ExpenseCategoryDao _categoryDao;
   late final SavingsGoalDao _savingsDao;
+  StreamSubscription<void>? _txSub;
+
+  @override
+  Future<void> close() {
+    _txSub?.cancel();
+    return super.close();
+  }
 
   Future<void> load() async {
-    emit(DashboardLoading());
+    if (state is DashboardInitial) {
+      emit(DashboardLoading());
+    }
     try {
       final now = DateTime.now();
       final startOfMonth = now.startOfMonth;

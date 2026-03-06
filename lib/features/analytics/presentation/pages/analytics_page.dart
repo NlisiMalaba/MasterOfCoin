@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart' as fl;
 
@@ -9,7 +10,6 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../../../shared/domain/transaction_type.dart';
-import '../../../expenses/domain/entity/expense_category.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -35,6 +35,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   List<double> _monthlyIncome = [];
   List<double> _monthlyExpenses = [];
   List<String> _monthLabels = [];
+  StreamSubscription<void>? _txSub;
 
   @override
   void initState() {
@@ -42,7 +43,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     _txDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
     _incomeSourceDao = getIt<IncomeSourceDao>();
+    _txSub = _txDao.updates.listen((_) {
+      if (mounted) _load();
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _txSub?.cancel();
+    super.dispose();
   }
 
   int _startOfMonth() {
@@ -55,8 +65,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-
     final start = _startOfMonth();
     final end = _endOfMonth();
 

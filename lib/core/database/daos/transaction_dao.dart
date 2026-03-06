@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../shared/domain/currency.dart';
@@ -12,12 +13,20 @@ class TransactionDao {
 
   static const String _table = 'transactions';
 
+  final _updatesController = StreamController<void>.broadcast();
+  Stream<void> get updates => _updatesController.stream;
+
+  void dispose() {
+    _updatesController.close();
+  }
+
   Future<void> insert(TransactionInsert insert) async {
     await _db.db.insert(
       _table,
       _toMap(insert),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _updatesController.add(null);
   }
 
   Future<void> update(TransactionInsert insert) async {
@@ -27,10 +36,12 @@ class TransactionDao {
       where: 'id = ?',
       whereArgs: [insert.id],
     );
+    _updatesController.add(null);
   }
 
   Future<void> delete(String id) async {
     await _db.db.delete(_table, where: 'id = ?', whereArgs: [id]);
+    _updatesController.add(null);
   }
 
   Future<TransactionRow?> getById(String id) async {

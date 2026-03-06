@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -5,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/savings_goal_dao.dart';
 import '../../../../core/database/daos/savings_usage_dao.dart' show SavingsUsageDao, SavingsUsageRow;
+import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/filter_segment_buttons.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
@@ -21,20 +23,31 @@ class SavingsGoalsListPage extends StatefulWidget {
 class _SavingsGoalsListPageState extends State<SavingsGoalsListPage> {
   late SavingsGoalDao _dao;
   late SavingsUsageDao _usageDao;
+  late TransactionDao _txDao;
   List<SavingsGoal> _goals = [];
   double _totalWithdrawn = 0;
   bool _loading = true;
+  StreamSubscription<void>? _txSub;
 
   @override
   void initState() {
     super.initState();
     _dao = getIt<SavingsGoalDao>();
     _usageDao = getIt<SavingsUsageDao>();
+    _txDao = getIt<TransactionDao>();
+    _txSub = _txDao.updates.listen((_) {
+      if (mounted) _load();
+    });
     _load();
   }
 
+  @override
+  void dispose() {
+    _txSub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
     final goals = await _dao.getAll();
     final usages = await _usageDao.getAllWithGoalNames();
     final withdrawn = usages.fold<double>(0, (sum, u) => sum + u.amount);

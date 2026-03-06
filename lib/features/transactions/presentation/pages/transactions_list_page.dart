@@ -1,14 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/transaction_mappers.dart';
 import '../../../../core/widgets/theme_toggle_button.dart';
-import '../../../../core/widgets/currency_display.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/domain/transaction_type.dart';
 import '../../domain/entity/transaction.dart';
-import 'transaction_form_page.dart';
 
 class TransactionsListPage extends StatefulWidget {
   const TransactionsListPage({super.key});
@@ -21,16 +20,25 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   late TransactionDao _dao;
   List<TransactionRow> _transactions = [];
   bool _loading = true;
+  StreamSubscription<void>? _txSub;
 
   @override
   void initState() {
     super.initState();
     _dao = getIt<TransactionDao>();
+    _txSub = _dao.updates.listen((_) {
+      if (mounted) _load();
+    });
     _load();
   }
 
+  @override
+  void dispose() {
+    _txSub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
     final list = await _dao.getAll(limit: 100);
     setState(() {
       _transactions = list;
