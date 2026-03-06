@@ -9,17 +9,23 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.isPositive,
+    this.color,
+    this.icon,
   });
 
   final String label;
   final String amount;
   final bool isPositive;
+  final Color? color;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPositive
+    final defaultColor = isPositive
         ? AppTheme.positiveColor(context)
         : AppTheme.negativeColor(context);
+    final displayColor = color ?? defaultColor;
+    final displayIcon = icon ?? (isPositive ? Icons.arrow_upward : Icons.arrow_downward);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -39,8 +45,8 @@ class StatCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-            color: color,
+            displayIcon,
+            color: displayColor,
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -56,7 +62,7 @@ class StatCard extends StatelessWidget {
                   amount,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: color,
+                        color: displayColor,
                       ),
                 ),
               ],

@@ -74,8 +74,10 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(height: 20),
                           _MonthlySummary(
                             usdIncome: data.usdIncome,
+                            usdSavings: data.usdSavings,
                             usdExpenses: data.usdExpenses,
                             zwgIncome: data.zwgIncome,
+                            zwgSavings: data.zwgSavings,
                             zwgExpenses: data.zwgExpenses,
                           ),
                           const SizedBox(height: 24),
@@ -179,14 +181,18 @@ class _BalanceSection extends StatelessWidget {
 class _MonthlySummary extends StatelessWidget {
   const _MonthlySummary({
     required this.usdIncome,
+    required this.usdSavings,
     required this.usdExpenses,
     required this.zwgIncome,
+    required this.zwgSavings,
     required this.zwgExpenses,
   });
 
   final double usdIncome;
+  final double usdSavings;
   final double usdExpenses;
   final double zwgIncome;
+  final double zwgSavings;
   final double zwgExpenses;
 
   @override
@@ -201,47 +207,84 @@ class _MonthlySummary extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 12),
+        // USD Summary
+        _SummaryGrid(
+          income: usdIncome,
+          savings: usdSavings,
+          expenses: usdExpenses,
+          currencySymbol: r'$',
+        ),
+        if (zwgIncome > 0 || zwgExpenses > 0 || zwgSavings > 0) ...[
+          const SizedBox(height: 16),
+          Text(
+            'ZWG Summary',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 8),
+          _SummaryGrid(
+            income: zwgIncome,
+            savings: zwgSavings,
+            expenses: zwgExpenses,
+            currencySymbol: r'Z$',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SummaryGrid extends StatelessWidget {
+  const _SummaryGrid({
+    required this.income,
+    required this.savings,
+    required this.expenses,
+    required this.currencySymbol,
+  });
+
+  final double income;
+  final double savings;
+  final double expenses;
+  final String currencySymbol;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
         Row(
           children: [
             Expanded(
               child: StatCard(
                 label: 'Income',
-                amount: '\$${usdIncome.toStringAsFixed(2)}',
+                amount: '$currencySymbol${income.toStringAsFixed(2)}',
                 isPositive: true,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
+                label: 'Saved',
+                amount: '$currencySymbol${savings.toStringAsFixed(2)}',
+                isPositive: true,
+                color: Colors.blue,
+                icon: Icons.savings_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
                 label: 'Expenses',
-                amount: '\$${usdExpenses.toStringAsFixed(2)}',
+                amount: '$currencySymbol${expenses.toStringAsFixed(2)}',
                 isPositive: false,
               ),
             ),
           ],
         ),
-        if (zwgIncome > 0 || zwgExpenses > 0) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  label: 'Income (ZWG)',
-                  amount: 'Z\$${zwgIncome.toStringAsFixed(2)}',
-                  isPositive: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  label: 'Expenses (ZWG)',
-                  amount: 'Z\$${zwgExpenses.toStringAsFixed(2)}',
-                  isPositive: false,
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }

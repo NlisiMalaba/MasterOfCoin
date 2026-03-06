@@ -16,8 +16,10 @@ class DashboardLoaded extends DashboardState {
     required this.usdBalance,
     required this.zwgBalance,
     required this.usdIncome,
+    required this.usdSavings,
     required this.usdExpenses,
     required this.zwgIncome,
+    required this.zwgSavings,
     required this.zwgExpenses,
     this.expensesByCategory = const [],
     this.monthlyIncome = const [],
@@ -29,8 +31,10 @@ class DashboardLoaded extends DashboardState {
   final double usdBalance;
   final double zwgBalance;
   final double usdIncome;
+  final double usdSavings;
   final double usdExpenses;
   final double zwgIncome;
+  final double zwgSavings;
   final double zwgExpenses;
   final List<MapEntry<String, double>> expensesByCategory;
   final List<double> monthlyIncome;
@@ -43,8 +47,10 @@ class DashboardLoaded extends DashboardState {
         usdBalance,
         zwgBalance,
         usdIncome,
+        usdSavings,
         usdExpenses,
         zwgIncome,
+        zwgSavings,
         zwgExpenses,
         expensesByCategory,
         monthlyIncome,

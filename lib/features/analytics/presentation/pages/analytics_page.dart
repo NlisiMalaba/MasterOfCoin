@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:go_router/go_router.dart';
+import 'package:fl_chart/fl_chart.dart' as fl;
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/database/daos/transaction_dao.dart';
 import '../../../../core/database/daos/expense_category_dao.dart';
-import '../../../../core/database/daos/savings_goal_dao.dart';
-import '../../../../core/widgets/theme_toggle_button.dart';
+import '../../../../core/database/daos/income_source_dao.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/theme_toggle_button.dart';
 import '../../../../shared/domain/currency.dart';
 import '../../../../shared/domain/transaction_type.dart';
 import '../../../expenses/domain/entity/expense_category.dart';
@@ -22,14 +21,16 @@ class AnalyticsPage extends StatefulWidget {
 class _AnalyticsPageState extends State<AnalyticsPage> {
   late TransactionDao _txDao;
   late ExpenseCategoryDao _categoryDao;
-  late SavingsGoalDao _savingsDao;
+  late IncomeSourceDao _incomeSourceDao;
 
   Currency _currency = Currency.usd;
   DateTime _selectedMonth = DateTime.now();
   bool _loading = true;
 
   double _income = 0;
+  double _savings = 0;
   double _expenses = 0;
+  List<MapEntry<String, double>> _incomeBySource = [];
   List<MapEntry<String, double>> _expensesByCategory = [];
   List<double> _monthlyIncome = [];
   List<double> _monthlyExpenses = [];
@@ -40,7 +41,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     super.initState();
     _txDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
-    _savingsDao = getIt<SavingsGoalDao>();
+    _incomeSourceDao = getIt<IncomeSourceDao>();
     _load();
   }
 
@@ -59,15 +60,31 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     final start = _startOfMonth();
     final end = _endOfMonth();
 
+    // Total Earned Income
     final income = await _txDao.sumByTypeAndCurrency(
       TransactionType.income,
       _currency.code,
       startDate: start,
       endDate: end,
+      excludeSavingsAllocations: false,
     );
+    
+    // Total Allocated to Savings
+    final savings = await _txDao.sumSavingsAllocations(
+      _currency.code,
+      startDate: start,
+      endDate: end,
+    );
+
     final expenses = await _txDao.sumByTypeAndCurrency(
       TransactionType.expense,
       _currency.code,
+      startDate: start,
+      endDate: end,
+    );
+
+    final bySourceRaw = await _txDao.incomeByCategory(
+      currency: _currency.code,
       startDate: start,
       endDate: end,
     );
@@ -80,9 +97,22 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     final categories = await _categoryDao.getAll();
     final categoryMap = {for (final c in categories) c.id: c.name};
+    
     final expensesByCat = byCategory
         .map((r) => MapEntry(
               categoryMap[r['category_id'] as String?] ?? 'Other',
+              (r['total'] as num).toDouble(),
+            ))
+        .where((e) => e.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final sources = await _incomeSourceDao.getAll(activeOnly: false);
+    final sourceMap = {for (final s in sources) s.id: s.name};
+
+    final incomeBySource = bySourceRaw
+        .map((r) => MapEntry(
+              sourceMap[r['category_id'] as String?] ?? 'Other Source',
               (r['total'] as num).toDouble(),
             ))
         .where((e) => e.value > 0)
@@ -115,7 +145,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     setState(() {
       _income = income;
+      _savings = savings;
       _expenses = expenses;
+      _incomeBySource = incomeBySource;
       _expensesByCategory = expensesByCat;
       _monthlyIncome = incomeList;
       _monthlyExpenses = expensesList;
@@ -200,6 +232,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                   color: Colors.green,
                                 ),
                                 _SummaryChip(
+                                  label: 'Saved',
+                                  amount: _savings,
+                                  currency: _currency,
+                                  color: Colors.blue,
+                                ),
+                                _SummaryChip(
                                   label: 'Expenses',
                                   amount: _expenses,
                                   currency: _currency,
@@ -207,9 +245,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                 ),
                                 _SummaryChip(
                                   label: 'Balance',
-                                  amount: _income - _expenses,
+                                  amount: _income - _expenses - _savings,
                                   currency: _currency,
-                                  color: (_income - _expenses) >= 0 ? Colors.green : Colors.red,
+                                  color: (_income - _expenses - _savings) >= 0
+                                      ? Colors.green
+                                      : Colors.red,
                                 ),
                               ],
                             ),
@@ -218,17 +258,60 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    if (_incomeBySource.isNotEmpty) ...[
+                      Text('Income by Source',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 200,
+                        child: fl.PieChart(
+                          fl.PieChartData(
+                            sections: _incomeBySource.asMap().entries.map((e) {
+                              final i = e.key % _chartColors.length;
+                              return fl.PieChartSectionData(
+                                value: e.value.value,
+                                title: '',
+                                color: _chartColors[i],
+                                radius: 60,
+                              );
+                            }).toList(),
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 40,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ..._incomeBySource.asMap().entries.map((e) {
+                        final i = e.key % _chartColors.length;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                color: _chartColors[i],
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(e.value.key)),
+                              Text(CurrencyFormatter.format(e.value.value, _currency)),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                    ],
                     if (_expensesByCategory.isNotEmpty) ...[
                       Text('Spending by Category',
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 12),
                       SizedBox(
                         height: 200,
-                        child: PieChart(
-                          PieChartData(
+                        child: fl.PieChart(
+                          fl.PieChartData(
                             sections: _expensesByCategory.asMap().entries.map((e) {
                               final i = e.key % _chartColors.length;
-                              return PieChartSectionData(
+                              return fl.PieChartSectionData(
                                 value: e.value.value,
                                 title: '',
                                 color: _chartColors[i],
@@ -265,11 +348,19 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       Text('Income vs Expenses (6 months)',
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _Legend(color: Colors.green, label: 'Income'),
+                          const SizedBox(width: 16),
+                          _Legend(color: Colors.red, label: 'Expenses'),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       SizedBox(
                         height: 220,
-                        child: BarChart(
-                          BarChartData(
-                            alignment: BarChartAlignment.spaceAround,
+                        child: fl.BarChart(
+                          fl.BarChartData(
+                            alignment: fl.BarChartAlignment.spaceAround,
                             maxY: ([
                               ..._monthlyIncome,
                               ..._monthlyExpenses,
@@ -277,28 +368,27 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                 .clamp(10.0, double.infinity),
                             barGroups: [
                               for (var i = 0; i < _monthLabels.length; i++)
-                                BarChartGroupData(
+                                fl.BarChartGroupData(
                                   x: i,
                                   barRods: [
-                                    BarChartRodData(
+                                    fl.BarChartRodData(
                                       toY: _monthlyIncome[i],
                                       color: Colors.green,
                                       width: 8,
                                       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                                     ),
-                                    BarChartRodData(
+                                    fl.BarChartRodData(
                                       toY: _monthlyExpenses[i],
                                       color: Colors.red,
                                       width: 8,
                                       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                                     ),
                                   ],
-                                  showingTooltipIndicators: [0, 1],
                                 ),
                             ],
-                            titlesData: FlTitlesData(
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
+                            titlesData: fl.FlTitlesData(
+                              bottomTitles: fl.AxisTitles(
+                                sideTitles: fl.SideTitles(
                                   showTitles: true,
                                   getTitlesWidget: (v, meta) {
                                     final i = v.toInt();
@@ -318,12 +408,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                   interval: 1,
                                 ),
                               ),
-                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              leftTitles: const fl.AxisTitles(sideTitles: fl.SideTitles(showTitles: false)),
+                              topTitles: const fl.AxisTitles(sideTitles: fl.SideTitles(showTitles: false)),
+                              rightTitles: const fl.AxisTitles(sideTitles: fl.SideTitles(showTitles: false)),
                             ),
-                            gridData: const FlGridData(show: false),
-                            borderData: FlBorderData(show: false),
+                            gridData: const fl.FlGridData(show: false),
+                            borderData: fl.FlBorderData(show: false),
                           ),
                           swapAnimationDuration: const Duration(milliseconds: 300),
                         ),
@@ -333,6 +423,35 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+class _Legend extends StatelessWidget {
+  const _Legend({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }

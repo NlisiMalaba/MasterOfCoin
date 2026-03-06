@@ -309,6 +309,16 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                                 ],
                                 onChanged: (v) => setState(() => _savingsGoalId = v),
                               ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                  'Allocated amount will be deducted from your available balance.',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontSize: 11,
+                                      ),
+                                ),
+                              ),
                             ],
                           ],
                           if (_type == TransactionType.expense) ...[

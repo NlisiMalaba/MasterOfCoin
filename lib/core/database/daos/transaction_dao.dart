@@ -117,6 +117,31 @@ class TransactionDao {
     return (value as num?)?.toDouble() ?? 0;
   }
 
+  Future<double> sumSavingsAllocations(
+    String currency, {
+    int? startDate,
+    int? endDate,
+  }) async {
+    var where = 'type = ? AND currency = ? AND savings_goal_id IS NOT NULL AND savings_goal_id != ""';
+    var args = <dynamic>[TransactionType.income.name, currency];
+
+    if (startDate != null) {
+      where += ' AND date >= ?';
+      args.add(startDate);
+    }
+    if (endDate != null) {
+      where += ' AND date <= ?';
+      args.add(endDate);
+    }
+
+    final result = await _db.db.rawQuery(
+      'SELECT COALESCE(SUM(amount), 0) as total FROM $_table WHERE $where',
+      args,
+    );
+    final value = result.first['total'];
+    return (value as num?)?.toDouble() ?? 0;
+  }
+
   Future<double> sumExpensesByCategory(
     String categoryId,
     String currency, {
@@ -160,6 +185,30 @@ class TransactionDao {
   }) async {
     var where = 'type = ? AND currency = ?';
     var args = <dynamic>['expense', currency];
+
+    if (startDate != null) {
+      where += ' AND date >= ?';
+      args.add(startDate);
+    }
+    if (endDate != null) {
+      where += ' AND date <= ?';
+      args.add(endDate);
+    }
+
+    return _db.db.rawQuery(
+      'SELECT category_id, SUM(amount) as total FROM $_table '
+      'WHERE $where GROUP BY category_id ORDER BY total DESC',
+      args,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> incomeByCategory({
+    required String currency,
+    int? startDate,
+    int? endDate,
+  }) async {
+    var where = 'type = ? AND currency = ?';
+    var args = <dynamic>['income', currency];
 
     if (startDate != null) {
       where += ' AND date >= ?';

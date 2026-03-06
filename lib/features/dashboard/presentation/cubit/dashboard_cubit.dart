@@ -16,12 +16,12 @@ class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit() : super(DashboardInitial()) {
     _transactionDao = getIt<TransactionDao>();
     _categoryDao = getIt<ExpenseCategoryDao>();
-    _savingsGoalDao = getIt<SavingsGoalDao>();
+    _savingsDao = getIt<SavingsGoalDao>();
   }
 
   late final TransactionDao _transactionDao;
   late final ExpenseCategoryDao _categoryDao;
-  late final SavingsGoalDao _savingsGoalDao;
+  late final SavingsGoalDao _savingsDao;
 
   Future<void> load() async {
     emit(DashboardLoading());
@@ -32,9 +32,15 @@ class DashboardCubit extends Cubit<DashboardState> {
       final startSec = startOfMonth.toUnixSeconds;
       final endSec = endOfMonth.toUnixSeconds;
 
-      // This month's income and expenses
+      // This month's data
       final usdIncome = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
+        Currency.usd.code,
+        startDate: startSec,
+        endDate: endSec,
+        excludeSavingsAllocations: false, // Total Earned
+      );
+      final usdSavings = await _transactionDao.sumSavingsAllocations(
         Currency.usd.code,
         startDate: startSec,
         endDate: endSec,
@@ -45,8 +51,15 @@ class DashboardCubit extends Cubit<DashboardState> {
         startDate: startSec,
         endDate: endSec,
       );
+
       final zwgIncome = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
+        Currency.zwg.code,
+        startDate: startSec,
+        endDate: endSec,
+        excludeSavingsAllocations: false,
+      );
+      final zwgSavings = await _transactionDao.sumSavingsAllocations(
         Currency.zwg.code,
         startDate: startSec,
         endDate: endSec,
@@ -58,12 +71,12 @@ class DashboardCubit extends Cubit<DashboardState> {
         endDate: endSec,
       );
 
-      // Total balance (all-time)
-      // Income excludes savings allocations - money allocated to savings deducts from available balance
+      // Total Balance (all-time)
+      // Balance = (Total Earned Income) - (Total Expenses) - (Current Savings Balance)
       final usdIncomeTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
         Currency.usd.code,
-        excludeSavingsAllocations: true,
+        excludeSavingsAllocations: false,
       );
       final usdExpensesTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.expense,
@@ -72,15 +85,14 @@ class DashboardCubit extends Cubit<DashboardState> {
       final zwgIncomeTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.income,
         Currency.zwg.code,
-        excludeSavingsAllocations: true,
+        excludeSavingsAllocations: false,
       );
       final zwgExpensesTotal = await _transactionDao.sumByTypeAndCurrency(
         TransactionType.expense,
         Currency.zwg.code,
       );
 
-      // Subtract savings from balance (allocated money is set aside, not spendable)
-      final allGoals = await _savingsGoalDao.getAll();
+      final allGoals = await _savingsDao.getAll();
       final usdSavingsTotal = allGoals
           .where((g) => g.currency == Currency.usd)
           .fold<double>(0, (sum, g) => sum + g.currentAmount);
@@ -150,8 +162,10 @@ class DashboardCubit extends Cubit<DashboardState> {
         usdBalance: usdBalance,
         zwgBalance: zwgBalance,
         usdIncome: usdIncome,
+        usdSavings: usdSavings,
         usdExpenses: usdExpenses,
         zwgIncome: zwgIncome,
+        zwgSavings: zwgSavings,
         zwgExpenses: zwgExpenses,
         expensesByCategory: expensesByCat,
         monthlyIncome: incomeList,
