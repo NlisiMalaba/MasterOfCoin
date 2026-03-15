@@ -1,0 +1,393 @@
+---
+alwaysApply: true
+---
+
+Cursor Project Rules — Flutter Personal Finance App
+1. Project Overview
+
+This project is a personal finance mobile app designed primarily for Android and optimized for offline use.
+
+The app tracks:
+
+income
+
+expenses
+
+budgets
+
+accounts
+
+transactions
+
+The app supports two currencies used in Zimbabwe:
+
+USD
+
+ZWG
+
+All financial calculations must use USD as the internal base currency.
+
+The application must remain simple, maintainable, and fast to build.
+
+2. Technology Stack
+
+Allowed technologies:
+
+Flutter (latest stable)
+
+Dart
+
+SQLite using sqflite
+
+Riverpod for state management
+
+intl for date formatting
+
+Avoid adding unnecessary dependencies.
+
+Disallowed technologies unless explicitly requested:
+
+Firebase
+
+GraphQL
+
+backend APIs
+
+Clean Architecture frameworks
+
+heavy dependency injection frameworks
+
+Bloc / Redux / MobX
+
+This is an offline-first mobile app.
+
+3. Project Folder Structure
+
+All code must follow this structure:
+
+lib/
+  main.dart
+
+  models/
+  database/
+  services/
+  providers/
+  screens/
+  widgets/
+  utils/
+
+Responsibilities:
+
+models/
+
+data classes only
+
+no database code
+
+no UI logic
+
+database/
+
+SQLite initialization
+
+schema creation
+
+migrations
+
+raw queries if needed
+
+services/
+
+business logic
+
+database operations
+
+currency calculations
+
+summaries
+
+providers/
+
+Riverpod providers
+
+state management
+
+screens/
+
+full app pages
+
+widgets/
+
+reusable UI components
+
+utils/
+
+helper functions
+
+formatters
+
+constants
+
+4. State Management Rules
+
+Use Riverpod.
+
+Rules:
+
+UI must never access SQLite directly
+
+UI interacts only with providers
+
+providers call services
+
+services interact with the database
+
+Flow must always be:
+
+UI Screen
+   ↓
+Provider
+   ↓
+Service
+   ↓
+Database
+
+Avoid:
+
+database queries in widgets
+
+business logic in UI
+
+5. Widget Design Rules
+
+Prefer StatelessWidget.
+
+Use ConsumerWidget when reading providers.
+
+Avoid large widgets.
+
+If a widget exceeds ~150 lines, split it into smaller widgets.
+
+Widgets must follow this order:
+
+constructor
+
+fields
+
+build method
+
+private helper widgets
+
+6. Performance Rules
+
+Avoid unnecessary rebuilds.
+
+Guidelines:
+
+Use ref.watch() only where needed
+
+Use ref.read() for actions
+
+Split UI widgets to minimize rebuilds
+
+Large lists must use:
+
+ListView.builder
+
+Never use large static ListView widgets for dynamic data.
+
+7. Database Design Rules
+
+Database: SQLite using sqflite
+
+Tables must be minimal.
+
+Required tables:
+
+accounts
+
+id
+name
+currency
+balance
+created_at
+
+transactions
+
+id
+account_id
+type
+category
+amount
+currency
+exchange_rate_to_usd
+amount_in_usd
+date
+note
+created_at
+
+budgets
+
+id
+category
+amount
+currency
+month
+year
+
+categories
+
+id
+name
+type
+8. Currency Handling Rules
+
+The system supports:
+
+USD
+
+ZWG
+
+All internal calculations must convert values to USD.
+
+Every transaction must store:
+
+amount
+currency
+exchange_rate_to_usd
+amount_in_usd
+
+Exchange rates are entered manually by the user.
+
+Historical transactions must never be recalculated.
+
+9. Database Performance Rules
+
+All transaction queries must support filtering by:
+
+date
+
+category
+
+account
+
+Transactions must be indexed by:
+
+date
+
+account_id
+
+Example SQL index:
+
+CREATE INDEX idx_transactions_date
+ON transactions(date);
+
+Large transaction lists must use pagination.
+
+10. Error Handling Rules
+
+Database calls must use try/catch.
+
+Errors must not crash the UI.
+
+Services should return:
+
+valid data
+
+or controlled error responses
+
+Avoid exposing raw exceptions to UI.
+
+11. Code Style Rules
+
+All Dart code must follow:
+
+null safety
+
+clear variable names
+
+small functions
+
+early returns instead of nested conditions
+
+Avoid functions longer than ~40 lines.
+
+Avoid files longer than ~300 lines.
+
+12. Data Entry UX Rules
+
+Finance apps prioritize speed of entry.
+
+Important screens must minimize taps.
+
+Primary screens:
+
+Dashboard
+
+Add Transaction
+
+Transactions List
+
+Budgets
+
+Accounts
+
+"Add Transaction" must be the fastest action in the app.
+
+13. Chart and Summary Rules
+
+Summary calculations should happen in services, not UI.
+
+Examples:
+
+monthly spending
+
+category totals
+
+income vs expense
+
+savings rate
+
+UI should only display computed results.
+
+14. Logging Rules
+
+Use simple logging for development.
+
+Do not introduce full logging frameworks yet.
+
+Use:
+
+debugPrint()
+
+for debugging.
+
+15. Future Proofing
+
+Design the app so it can later support:
+
+cloud sync
+
+user accounts
+
+backend APIs
+
+But do not implement those features now.
+
+Avoid premature abstraction.
+
+16. Development Philosophy
+
+This project prioritizes:
+
+simplicity
+
+speed of development
+
+maintainability
+
+offline reliability
+
+Avoid overengineering.
+
+The goal is to ship a working Android app quickly.
